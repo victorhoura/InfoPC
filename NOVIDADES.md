@@ -1,3 +1,10 @@
+## Novidades da v1.1.4
+
+**Dados e desfazer, nas duas edições**
+- Se outro programa estiver com o arquivo de dados preso ao abrir, o InfoPC avisa e não troca nenhuma cópia. Antes, podia carregar a cópia anterior sem avisar.
+- Abrir com o arquivo preso e gravar depois não perde mais os dados: a cópia dele é guardada antes.
+- Com três cópias dos dados, uma cópia comprovadamente anterior nunca é escolhida, e o aviso diz qual pasta está em uso e onde ficou o resto.
+
 ## Novidades da v1.1.3
 
 **Dados e desfazer, nas duas edições**

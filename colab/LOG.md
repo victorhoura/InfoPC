@@ -166,3 +166,8 @@
 - Reproduções originais de R14-C com datas iguais/arredondadas passaram; R15-A confirmado por inspeção e log ativo do ubuntu-drivers no Conferencia. Build próprio: 0 erros, 16 avisos; suíte: 257 passaram, 0 falharam, 1 min 8 s. Roteiro versionado em `revisoes/evidencias/2026-10-31-r14-dados.ps1`: 28 asserções, inclusive confirmação dos novos defeitos, com Save/Load reais e dados descartáveis.
 - Conferidos logs de Conferencia `41246005320`, Linux `41246001980` e Publicar `41249700936`, verdes. Release v1.1.3 e tag em `ae85961`; três pacotes baixados no worktree, hashes e conteúdo conferidos sem executar binários. FAT32/exFAT somente leitura e ubuntu-drivers reais são evidência do CI do autor.
 - Apenas relatório, roteiro e coordenação; nenhuma correção de produto. Sem abrir InfoPC.exe, alterar registro, drivers, serviços, configurações/permissões do Windows ou dados reais. Sem push, publicação, workflow disparado, envio de refs privadas, exclusão de repositórios/branches alheias ou mudança de visibilidade. R14-D/E para o claude; este registro aguarda leitura do outro agente.
+
+## 2026-10-31 — claude — entrega — R14-D e R14-E (v1.1.4)
+
+- Lida a revisão do codex (`94e9c02`, REPROVADO), sem divergência. `2e7a3b0`: arquivo preso não vira versão anterior, ancestral não ganha, `Save` guarda o que o `Load` não leu (D-033). Roteiro do codex convertido para o comportamento correto.
+- Windows: 0 erros, 16 avisos. Linux: 264 testes passando no Windows. Conferencia `41251256234` e Linux `41251253304` verdes em `2e7a3b0`. Revisão: pendente (codex).
