@@ -353,18 +353,19 @@
                                                        Foreground="{DynamicResource Muted}" HorizontalAlignment="Right"/>
                                         </StackPanel>
                                     </Grid>
-                                    <Grid Margin="0,16,0,8">
-                                        <StackPanel x:Name="DashRangePanel" Orientation="Horizontal">
+                                    <!-- WrapPanel: em janela estreita, a métrica desce de linha em vez de cobrir o "15 MIN" -->
+                                    <WrapPanel Margin="0,16,0,8">
+                                        <StackPanel x:Name="DashRangePanel" Orientation="Horizontal" Margin="0,0,12,0">
                                             <RadioButton Style="{StaticResource Chip}" GroupName="DashRange" Content="1 MIN" Tag="60" Checked="DashOption_Checked"/>
                                             <RadioButton Style="{StaticResource Chip}" GroupName="DashRange" Content="5 MIN" Tag="300" IsChecked="True" Checked="DashOption_Checked"/>
                                             <RadioButton Style="{StaticResource Chip}" GroupName="DashRange" Content="15 MIN" Tag="900" Checked="DashOption_Checked"/>
                                         </StackPanel>
-                                        <StackPanel x:Name="DashMetricPanel" Orientation="Horizontal" HorizontalAlignment="Right">
+                                        <StackPanel x:Name="DashMetricPanel" Orientation="Horizontal">
                                             <RadioButton Style="{StaticResource Chip}" GroupName="DashMetric" Content="Temperatura" Tag="temp" IsChecked="True" Checked="DashOption_Checked"/>
                                             <RadioButton Style="{StaticResource Chip}" GroupName="DashMetric" Content="Carga" Tag="load" Checked="DashOption_Checked"/>
                                             <RadioButton Style="{StaticResource Chip}" GroupName="DashMetric" Content="Consumo" Tag="power" Checked="DashOption_Checked"/>
                                         </StackPanel>
-                                    </Grid>
+                                    </WrapPanel>
                                     <Canvas x:Name="DashChart" Height="210" ClipToBounds="True" SizeChanged="DashChart_SizeChanged"/>
                                     <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
                                         <Rectangle Width="14" Height="2" Fill="{DynamicResource Fg}" VerticalAlignment="Center" Margin="0,0,6,0"/>
@@ -1230,12 +1231,17 @@
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
+                    <!-- colunas: com várias placas, os botões não cobrem o subtítulo -->
                     <Grid Margin="0,0,0,20">
-                        <StackPanel>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Margin="0,0,16,0">
                             <TextBlock Text="Placa de vídeo" Style="{StaticResource H1}"/>
                             <TextBlock Text="Especificações completas e sensores em tempo real" Style="{StaticResource Sub}"/>
                         </StackPanel>
-                        <WrapPanel x:Name="GpuChips" HorizontalAlignment="Right" VerticalAlignment="Bottom"/>
+                        <WrapPanel x:Name="GpuChips" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Bottom"/>
                     </Grid>
 
                     <!-- Destaque -->
@@ -1491,12 +1497,16 @@
                         <Border Style="{StaticResource CardBorder}">
                             <StackPanel>
                                 <Grid>
-                                    <StackPanel>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Margin="0,0,16,0">
                                         <TextBlock Text="ANÁLISE DE SESSÃO" Style="{StaticResource Label}"/>
                                         <TextBlock Text="Clique em iniciar, abra o jogo e jogue normalmente. Ao final você recebe o diagnóstico."
                                                    Foreground="{DynamicResource Muted}" TextWrapping="Wrap"/>
                                     </StackPanel>
-                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
                                         <StackPanel x:Name="BnDurationPanel" Orientation="Horizontal" Margin="0,0,14,0" VerticalAlignment="Center">
                                             <RadioButton Style="{StaticResource Chip}" GroupName="BnDur" Content="1 min" Tag="1" Margin="0,0,6,0" IsChecked="True"/>
                                             <RadioButton Style="{StaticResource Chip}" GroupName="BnDur" Content="3 min" Tag="3" Margin="0,0,6,0"/>
@@ -2821,7 +2831,7 @@
                     </Border>
 
                     <!-- Leituras -->
-                    <UniformGrid Grid.Row="2" Columns="8" Margin="-4,0,-4,14">
+                    <UniformGrid Grid.Row="2" Columns="4" Margin="-4,0,-4,14">
                         <UniformGrid.Resources>
                             <Style TargetType="Border" BasedOn="{StaticResource CardBorder}">
                                 <Setter Property="Margin" Value="4,0"/>

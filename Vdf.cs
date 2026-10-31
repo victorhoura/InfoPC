@@ -107,7 +107,8 @@ public static class Vdf
         return s[start..i];
     }
 
-    private static string Esc(string v) => v.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\n", "\\n").Replace("\t", "\\t");
+    // tabulação e quebra de linha ficam como estão: a Steam as grava assim, e o arquivo precisa voltar igual ao restaurar
+    private static string Esc(string v) => v.Replace("\\", "\\\\").Replace("\"", "\\\"");
 
     public static string Serialize(VdfNode root)
     {

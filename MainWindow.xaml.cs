@@ -937,7 +937,8 @@ public partial class MainWindow : Window
             t.Refresh();
             t.Status = $"Falhou: {ex.Message}";
         }
-        box.IsChecked = t.IsOn; // o binding é só leitura: volta ao estado real
+        // volta ao estado real sem desfazer o binding: IsChecked = ... o apagaria, e RESTAURAR ORIGINAIS não atualizaria mais o interruptor
+        box.SetCurrentValue(System.Windows.Controls.Primitives.ToggleButton.IsCheckedProperty, t.IsOn);
     }
 
     // ----- USB e portas COM -----

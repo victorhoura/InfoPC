@@ -540,6 +540,14 @@ public class SharedCodeTests
     }
 
     [Fact]
+    public void Vdf_keeps_other_steam_options_byte_for_byte()
+    {
+        // visto no localconfig.vdf real: o atalho do overlay tem uma tabulação dentro do valor
+        const string vdf = "\"UserLocalConfigStore\"\n{\n\t\"friends\"\n\t{\n\t\t\"InGameOverlayShortcutKey\"\t\t\"Shift\tKEY_TAB\"\n\t\t\"path\"\t\t\"C:\\\\Steam\"\n\t\t\"nome\"\t\t\"a \\\"b\\\"\"\n\t}\n}\n";
+        Assert.Equal(vdf, Vdf.Serialize(Vdf.Parse(vdf)));
+    }
+
+    [Fact]
     public void Bottleneck_classification_rules()
     {
         Assert.Equal(Limiter.Gpu, new LoadSample(95, 40, 60, null, 50, 50, 70, 60, false, null).Classify());
