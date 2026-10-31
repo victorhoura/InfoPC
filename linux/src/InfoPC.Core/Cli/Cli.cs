@@ -39,7 +39,7 @@ Nada é enviado pela internet sem você pedir.";
         for (Exception? e = ex; e != null; e = e.InnerException)
         {
             if (e is DllNotFoundException)
-                return $"Falta uma biblioteca gráfica para abrir a janela ({e.Message}). No Ubuntu e no Debian: sudo apt install libx11-6 libice6 libsm6 fontconfig. {text}";
+                return $"Falta uma biblioteca gráfica para abrir a janela ({e.Message.Split('\n')[0].Trim()}). No Ubuntu e no Debian: sudo apt install libx11-6 libice6 libsm6 fontconfig. {text}";
             if (e.Message.Contains("XOpenDisplay", StringComparison.Ordinal))
                 return !string.IsNullOrEmpty(wayland ?? Environment.GetEnvironmentVariable("WAYLAND_DISPLAY"))
                     ? $"Esta sessão é Wayland sem XWayland, e a janela do InfoPC precisa dele. Instale o XWayland (pacote xwayland) e entre de novo na sessão. {text}"

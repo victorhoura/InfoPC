@@ -553,8 +553,9 @@ public class SharedCodeTests
     [Fact]
     public void A_missing_graphics_library_is_explained_even_when_wrapped()
     {
-        var why = Cli.WhyNoWindow(new TypeInitializationException("X", new DllNotFoundException("libX11.so.6")), "");
+        var why = Cli.WhyNoWindow(new TypeInitializationException("X", new DllNotFoundException("libX11.so.6\nDiagnóstico longo do .NET")), "");
         Assert.Contains("libX11.so.6", why);
+        Assert.DoesNotContain("Diagnóstico", why);
     }
 
     [Fact]
