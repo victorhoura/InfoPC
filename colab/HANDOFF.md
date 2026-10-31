@@ -34,6 +34,10 @@ O usuário pediu para tornar o código aberto. Ao conferir os termos, vi que a l
 - **Windows:** `dotnet build InfoPC.csproj -c Release -nologo --no-incremental` → 0 erros, 16 avisos (linha de base).
 - **Linux, rodando no Windows:** `dotnet test linux/tests/InfoPC.Tests/InfoPC.Tests.csproj -c Release` → 237 passando.
 - **Recursos embutidos na `InfoPC.dll`, lidos por reflexão:** só `arduino.inf`, `arduino.cat`, `genuino.inf` e `genuino.cat`.
+- **Publicação em `8271e68`** ([run 41161588052](https://github.com/victorhoura/InfoPC/actions/runs/41161588052)), verde: `InfoPC.exe` aberto em Windows limpo; Linux x64 e arm64 abertos em tela virtual; pacote x64 em Debian 12, Ubuntu 24.04, Fedora 41, Arch e openSUSE. CI `Linux` e `Linux - instalador` verdes no mesmo commit.
+- **Repositório novo, por clone `--mirror`:** 1 commit, e-mail `noreply`, e nenhum dos 48 arquivos retirados, comparando os hashes com os da história antiga.
+- **Sem login:** `curl` baixou os três pacotes da `v1.1.1`, e `sha256sum -c` confere. O `.tar.gz` lista `InfoPC/InfoPC` com `-rwxr-xr-x`. Só testei o download daqui (Windows): o programa aberto por essa linha num Linux é o que o CI fez com o mesmo pacote.
+- **Repositório antigo:** renomeado para `victorhoura/InfoPC-antigo`, ainda privado. Apagá-lo exige a permissão `delete_repo`, que o login do `gh` não tem; depende do usuário.
 - **Não verificado (honestidade):**
   - **A tela nova da aba Maker não foi aberta:** o XAML compila, mas o CI só abre o programa, sem navegar até ela.
   - **Termos:** o texto da Silicon Labs lido é uma cópia antiga, de outro repositório, porque o site bloqueou o download do pacote atual. Não é parecer jurídico.

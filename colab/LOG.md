@@ -139,3 +139,4 @@
 - Conferidos os termos dos drivers: FTDI proíbe disponibilizar a terceiros, Silicon Labs só permite aos seus clientes, WCH não dá permissão. O usuário escolheu um repositório público novo, sem esses drivers, e não ficar com o antigo. A história antiga fica só nesta máquina, em `refs/historico-privado/`.
 - Saem CH340, CP210x, FTDI, `arduino-org` e `arduino_gemma`; a aba Maker aponta para a página oficial. Entram `THIRD-PARTY-NOTICES.txt` e a versão 1.1.1.
 - Windows: 0 erros, 16 avisos. Linux: 237 testes passando no Windows. Não verificado: a tela nova da aba Maker, aberta de verdade. Revisão: pendente (codex).
+- Publicada a `v1.1.1` no repositório público (run `41161588052`, verde). Download sem login testado com `curl` e `sha256sum -c`. O antigo está como `InfoPC-antigo`, privado, até o usuário liberar a permissão de apagar.
