@@ -9,7 +9,7 @@ public sealed record RootResult(bool Ok, string Output, string Error, bool Cance
     public string Message =>
         Ok ? (string.IsNullOrWhiteSpace(Output) ? "Concluído." : Output.Trim())
         : Cancelled ? "Cancelado: a senha não foi informada."
-        : Unavailable ? "Não há como pedir a senha por aqui (pkexec ausente ou sem sessão gráfica). Rode no terminal: " + ManualCommand
+        : Unavailable ? "Sem autorização de administrador: a senha não foi aceita ou não há como pedi-la por aqui (pkexec ausente, recusado ou sem sessão gráfica). Rode no terminal: " + ManualCommand
         : string.IsNullOrWhiteSpace(Error) ? "Falhou." : Error.Trim();
 }
 

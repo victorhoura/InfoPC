@@ -29,6 +29,25 @@ Comandos (modo texto):
 Dados e configurações: a pasta ""dados"" ao lado do programa (ou ~/.local/share/InfoPC).
 Nada é enviado pela internet sem você pedir.";
 
+    /// <summary>
+    /// Mensagem para quando a janela não pode abrir: sem tela X11 (a interface usa X11; no Wayland, pelo XWayland) ou sem biblioteca gráfica.
+    /// Outros erros devolvem null, para não virarem um "falta tela" enganoso.
+    /// </summary>
+    public static string? WhyNoWindow(Exception ex, string? wayland = null)
+    {
+        const string text = "O modo texto continua funcionando: InfoPC --ajuda";
+        for (Exception? e = ex; e != null; e = e.InnerException)
+        {
+            if (e is DllNotFoundException)
+                return $"Falta uma biblioteca gráfica para abrir a janela ({e.Message}). No Ubuntu e no Debian: sudo apt install libx11-6 libice6 libsm6 fontconfig. {text}";
+            if (e.Message.Contains("XOpenDisplay", StringComparison.Ordinal))
+                return !string.IsNullOrEmpty(wayland ?? Environment.GetEnvironmentVariable("WAYLAND_DISPLAY"))
+                    ? $"Esta sessão é Wayland sem XWayland, e a janela do InfoPC precisa dele. Instale o XWayland (pacote xwayland) e entre de novo na sessão. {text}"
+                    : $"Não há sessão gráfica aqui (SSH ou servidor?), então a janela não abre. {text}";
+        }
+        return null;
+    }
+
     public static int? Run(string[] args, TextWriter? output = null)
     {
         if (args.Length == 0) return null;

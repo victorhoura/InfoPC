@@ -41,6 +41,7 @@ jobs:
           dotnet test linux/tests/InfoPC.Tests/InfoPC.Tests.csproj -c Release --no-build --filter Categoria=Conferencia --logger "console;verbosity=normal"
           ./publicado/InfoPC --discos --smart | head -30
       - name: Polkit recusa
+        if: always()
         env:
           CONFERENCIA: polkit-nao
           DISPLAY: ":99"
@@ -51,6 +52,7 @@ jobs:
           dotnet test linux/tests/InfoPC.Tests/InfoPC.Tests.csproj -c Release --no-build --filter Categoria=Conferencia --logger "console;verbosity=normal"
           ./publicado/InfoPC --discos --smart | head -12
       - name: Hidepid
+        if: always()
         env:
           CONFERENCIA: hidepid
         run: |
@@ -59,6 +61,22 @@ jobs:
           grep ' /proc ' /proc/mounts
           dotnet test linux/tests/InfoPC.Tests/InfoPC.Tests.csproj -c Release --no-build --filter Categoria=Conferencia --logger "console;verbosity=normal"
           ./publicado/InfoPC --diagnostico
+      - name: Sem tela nenhuma, explica em vez de abortar
+        if: always()
+        run: |
+          set +e
+          env -u DISPLAY -u WAYLAND_DISPLAY ./publicado/InfoPC > sem-tela.txt 2>&1; c=$?
+          cat sem-tela.txt; echo "codigo: $c"
+          test "$c" = 1 && grep -q 'modo texto' sem-tela.txt
+      - name: Servidor sem bibliotecas graficas, em conteiner limpo
+        if: always()
+        run: |
+          docker run --rm -v "$PWD/publicado:/p:ro" debian:12 sh -c '
+            cd /p; ./InfoPC --versao
+            ./InfoPC > /tmp/s.txt 2>&1; c=$?
+            cat /tmp/s.txt; echo "codigo: $c"
+            test "$c" = 1 && grep -q "modo texto" /tmp/s.txt
+          '
 
   pendrive:
     name: Pen drive FAT32 e exFAT
@@ -124,7 +142,7 @@ jobs:
           set -x
           if [ "$DESKTOP" = gnome ]; then
             export XDG_SESSION_TYPE=wayland XDG_CURRENT_DESKTOP=GNOME
-            gnome-shell --wayland --headless --virtual-monitor 1280x800 --no-x11=false > shell.log 2>&1 &
+            gnome-shell --wayland --headless --virtual-monitor 1280x800 > shell.log 2>&1 &
           else
             export XDG_SESSION_TYPE=wayland XDG_CURRENT_DESKTOP=KDE
             kwin_wayland --virtual --xwayland --no-lockscreen --width 1280 --height 800 > shell.log 2>&1 &
@@ -161,9 +179,11 @@ jobs:
             kwin_wayland --virtual --no-lockscreen --width 1280 --height 800 > shell2.log 2>&1 & s=$!
             for i in $(seq 1 60); do [ -S "$XDG_RUNTIME_DIR/wayland-0" ] && break; sleep 1; done; sleep 5
             export WAYLAND_DISPLAY=wayland-0; unset DISPLAY
-            timeout 20 ./publicado/InfoPC; echo "codigo sem XWayland: $?"
+            timeout 20 ./publicado/InfoPC > sem-x.txt 2>&1; c=$?
+            cat sem-x.txt; echo "codigo sem XWayland: $c"
             kill $s
-          ' || true
+            test "$c" = 1 && grep -q XWayland sem-x.txt
+          '
       - uses: actions/upload-artifact@v4
         if: always()
         with:

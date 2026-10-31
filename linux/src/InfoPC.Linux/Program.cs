@@ -11,7 +11,13 @@ public static class Program
         if (Cli.Run(args) is { } code) return code;
 
         Locale.Init();
-        return BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
+        try { return BuildAvaloniaApp().StartWithClassicDesktopLifetime(args); }
+        catch (Exception ex) when (Cli.WhyNoWindow(ex) is { } why)
+        {
+            // sem tela ou sem biblioteca gráfica: explica em vez de abortar com core dump
+            Console.Error.WriteLine(why);
+            return 1;
+        }
     }
 
     public static AppBuilder BuildAvaloniaApp() =>

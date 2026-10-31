@@ -21,13 +21,15 @@ public class ConferenciaTests
     }
 
     [Fact]
-    public void Pkexec_de_verdade_recusado_vira_cancelado()
+    public void Pkexec_de_verdade_recusado_mostra_o_comando_manual()
     {
         if (Modo != "polkit-nao") return;
         var r = Elevate.Run("id", new[] { "-u" });
         Assert.False(r.Ok);
-        Assert.True(r.Cancelled, $"esperava cancelado; erro: {r.Error}");
-        Assert.Contains("senha", r.Message);
+        // recusa do polkit é 127 no pkexec (126 é só fechar a janela de senha, o que exige um agente de verdade)
+        Assert.True(r.Unavailable, $"esperava sem autorização; erro: {r.Error}");
+        Assert.Contains("Sem autorização", r.Message);
+        Assert.Contains("sudo ", r.Message);
     }
 
     [Fact]

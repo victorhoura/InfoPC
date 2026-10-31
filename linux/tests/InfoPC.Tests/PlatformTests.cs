@@ -539,6 +539,30 @@ public class SharedCodeTests
         Assert.Contains("libraryfolders", Vdf.Serialize(Vdf.Parse(vdf)));
     }
 
+    [Theory]
+    [InlineData("wayland-0", "XWayland")]
+    [InlineData("", "sessão gráfica")]
+    public void Without_a_display_the_program_explains_what_is_missing(string wayland, string expected)
+    {
+        var why = Cli.WhyNoWindow(new Exception("XOpenDisplay failed"), wayland);
+        Assert.NotNull(why);
+        Assert.Contains(expected, why);
+        Assert.Contains("--ajuda", why);
+    }
+
+    [Fact]
+    public void A_missing_graphics_library_is_explained_even_when_wrapped()
+    {
+        var why = Cli.WhyNoWindow(new TypeInitializationException("X", new DllNotFoundException("libX11.so.6")), "");
+        Assert.Contains("libX11.so.6", why);
+    }
+
+    [Fact]
+    public void Other_errors_are_not_swallowed_as_a_missing_display()
+    {
+        Assert.Null(Cli.WhyNoWindow(new InvalidOperationException("outro problema"), ""));
+    }
+
     [Fact]
     public void Vdf_keeps_other_steam_options_byte_for_byte()
     {
