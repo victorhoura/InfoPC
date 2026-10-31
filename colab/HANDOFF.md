@@ -6,15 +6,23 @@
 |-----------------------------|-------------------------------------------------------------|
 | Última entrega por          | claude                                                      |
 | Data                        | 2026-10-31                                                  |
-| Assunto                     | Correção de R14-D e R14-E e `v1.1.4`. **Aguarda revisão do codex** |
-| Último commit revisado      | `ae859617828b20129ef7b47aab320c28b361996e` (codex; relatório `94e9c02`, lido pelo claude) |
-| Veredito da última revisão  | **REPROVADO** — [correção de R14-C/R15-A e v1.1.3](revisoes/2026-10-31-claude-r14c-r15a-113.md): R14-D e R14-E, tratados aqui, com a resposta no relatório |
+| Assunto                     | Correção de R14-D e R14-E e `v1.1.4`, revisada pelo codex. **R14-F/G aguardam correção do claude** |
+| Último commit revisado      | `eb571905915c9889b438668b7f44e28d688b02d0` (codex; somente commits do claude, excluído o próprio `94e9c02`) |
+| Veredito da última revisão  | **REPROVADO** — [correção de R14-D/R14-E e v1.1.4](revisoes/2026-10-31-claude-r14de-114.md): R14-F bloqueante (perda do original após falha na preservação) e R14-G importante (bloqueio após checagem faz retornar ancestral) |
 
-## O que revisar
+## Intervalo desta revisão
 
 `git log --no-merges --oneline ae85961..main` e `git diff 94e9c02 main`. Só os commits do claude; `94e9c02` é o relatório do próprio codex.
 
 A história anterior a `8271e68` fica só nesta máquina, em `refs/historico-privado/main`, com os drivers retirados. Nunca a envie (AGENTS.md, seção 4).
+
+## Fechamento pelo revisor — codex, 2026-10-31
+
+- Revisados `2e7a3b0` e `eb57190`. Reproduções originais R14-D/E confirmadas como corrigidas. Build próprio: **0 erros, 16 avisos**; suíte: **264 passaram, 0 falharam**; roteiro anterior: **28 verificações**; [roteiro novo](revisoes/evidencias/2026-10-31-r14de-dados.ps1): **42 verificações**, incluindo as reproduções dos achados.
+- **R14-F, BLOQUEANTE:** um Save que falha com o arquivo ainda preso desarma a preservação; a tentativa seguinte substitui o original sem backup. Também perde o original se só o `.corrompido` está preso. Core executado com dados descartáveis; Windows inspecionado e compilado, sem executar o programa. É perda física adicional ao limite declarado da tela vazia.
+- **R14-G, IMPORTANTE:** arquivo da portátil fica preso após `CanRead`; `Latest` ainda trata a nova falha como ausência de trilha. `Resolve` retorna a fallback anterior com aviso de falha de cópia. Três reproduções, sem exclusão física; o aviso não explica que o desfazer posterior ficou na portátil.
+- Conferidos logs de Conferencia `41251256234`, Linux `41251253304` e Publicar `41251723181`. Release/tag `v1.1.4` em `eb57190`; três pacotes baixados, hashes e conteúdo conferidos sem executar binários. A abertura com arquivo preso informada pelo autor é evidência dele, compatível com o caminho feliz testado no Core; não é execução do revisor.
+- Sem correções no produto, sem abrir InfoPC.exe, alterar o sistema, push ou publicação. O relatório e este registro aguardam leitura do claude; as correções não triviais ficam para ele. Limites D-032/D-033 mantidos; detalhes e reproduções no relatório.
 
 ## O que foi feito
 

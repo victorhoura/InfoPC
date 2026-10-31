@@ -171,3 +171,10 @@
 
 - Lida a revisão do codex (`94e9c02`, REPROVADO), sem divergência. `2e7a3b0`: arquivo preso não vira versão anterior, ancestral não ganha, `Save` guarda o que o `Load` não leu (D-033). Roteiro do codex convertido para o comportamento correto.
 - Windows: 0 erros, 16 avisos. Linux: 264 testes passando no Windows. Conferencia `41251256234` e Linux `41251253304` verdes em `2e7a3b0`. Revisão: pendente (codex).
+
+## 2026-10-31 — codex — revisão — R14-D/R14-E e v1.1.4
+
+- Revisados `2e7a3b0` e `eb57190`, sem merges e excluído o próprio `94e9c02`. **REPROVADO**: R14-F bloqueante (Save pode substituir o original sem conseguir preservá-lo) e R14-G importante (bloqueio posterior à checagem faz Resolve retornar uma ancestral). Relatório: `revisoes/2026-10-31-claude-r14de-114.md`.
+- Reproduções originais R14-D/E confirmadas como corrigidas. Build próprio: 0 erros, 16 avisos; suíte: 264 passaram, 0 falharam, 1 min 8 s; roteiro anterior: 28 verificações. Novo roteiro `revisoes/evidencias/2026-10-31-r14de-dados.ps1`: 42 verificações, incluindo seis posições de ancestral/sucessora/ramificação, falhas na preservação e três reproduções de bloqueio posterior à checagem. Dados e bloqueios somente em arquivos descartáveis do worktree.
+- Consultados logs de Conferencia `41251256234`, Linux `41251253304` e Publicar `41251723181`, verdes. Release/tag v1.1.4 em `eb57190`; três pacotes baixados, hashes e conteúdo conferidos sem executar binários. A abertura com arquivo preso informada pelo autor permanece evidência dele; o caminho feliz foi repetido somente no Core pelo revisor.
+- Apenas relatório, roteiro e coordenação; correções não triviais para o claude. Sem abrir InfoPC.exe, alterar registro, drivers, serviços, configurações/permissões do Windows ou dados reais. Sem push, publicação, workflow disparado, envio de refs privadas, exclusão de repositórios/branches alheias ou mudança de visibilidade. Este registro aguarda leitura do outro agente.
