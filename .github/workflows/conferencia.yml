@@ -1,7 +1,7 @@
 name: Conferencia
 
 # So roda na mao. Testa o que o CI normal nao cobre, em Linux de verdade: pkexec e polkit reais, ubuntu-drivers,
-# hidepid, pen drive FAT e exFAT, janela sob GNOME e KDE (Wayland, com XWayland) e o pacote arm64 em outras distribuicoes.
+# hidepid, pen drive FAT e exFAT, janela sob GNOME (Wayland, com XWayland) e KDE (X11) e o pacote arm64 em outras distribuicoes.
 on:
   workflow_dispatch:
 
@@ -117,11 +117,13 @@ jobs:
   janela:
     name: Janela em ${{ matrix.desktop }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 25
+    timeout-minutes: 15
+    # o Xwayland do Ubuntu 24.04 da segfault sob o kwin_wayland virtual: fica como tentativa informativa
+    continue-on-error: ${{ matrix.desktop == 'kde-wayland' }}
     strategy:
       fail-fast: false
       matrix:
-        desktop: [gnome, kde]
+        desktop: [gnome, kde-x11, kde-wayland]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
@@ -131,8 +133,12 @@ jobs:
         run: |
           dotnet publish linux/src/InfoPC.Linux/InfoPC.Linux.csproj -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=None -o publicado -v q
           sudo apt-get update -qq
-          if [ "${{ matrix.desktop }}" = gnome ]; then pacotes="gnome-shell"; else pacotes="kwin-wayland kwin-wayland-backend-virtual"; fi
-          sudo apt-get install -y -qq --no-install-recommends $pacotes xwayland dbus-x11 xdotool imagemagick x11-utils libice6 libsm6 libx11-6 fontconfig fonts-dejavu-core > /dev/null || sudo apt-get install -y -qq --no-install-recommends $pacotes xwayland dbus-x11 xdotool imagemagick x11-utils libice6 libsm6 libx11-6 fontconfig fonts-dejavu-core
+          case "${{ matrix.desktop }}" in
+            gnome) pacotes="gnome-shell xwayland" ;;
+            kde-x11) pacotes="kwin-x11 xvfb" ;;
+            kde-wayland) pacotes="kwin-wayland kwin-wayland-backend-virtual xwayland" ;;
+          esac
+          sudo apt-get install -y -qq --no-install-recommends $pacotes dbus-x11 xdotool imagemagick x11-utils libice6 libsm6 libx11-6 fontconfig fonts-dejavu-core > /dev/null
       - name: Abrir a janela
         env:
           DESKTOP: ${{ matrix.desktop }}
@@ -140,50 +146,68 @@ jobs:
           export XDG_RUNTIME_DIR=/tmp/xdg-conferencia; mkdir -m 700 -p "$XDG_RUNTIME_DIR"
           cat > sessao.sh <<'EOF'
           set -x
-          if [ "$DESKTOP" = gnome ]; then
-            export XDG_SESSION_TYPE=wayland XDG_CURRENT_DESKTOP=GNOME
-            gnome-shell --wayland --headless --virtual-monitor 1280x800 > shell.log 2>&1 &
-          else
-            export XDG_SESSION_TYPE=wayland XDG_CURRENT_DESKTOP=KDE
-            kwin_wayland --virtual --xwayland --no-lockscreen --width 1280 --height 800 > shell.log 2>&1 &
-          fi
+          case "$DESKTOP" in
+            gnome)
+              export XDG_SESSION_TYPE=wayland XDG_CURRENT_DESKTOP=GNOME
+              gnome-shell --wayland --headless --virtual-monitor 1280x800 > shell.log 2>&1 &
+              ;;
+            kde-x11)
+              export XDG_SESSION_TYPE=x11 XDG_CURRENT_DESKTOP=KDE
+              Xvfb :77 -screen 0 1280x800x24 > xvfb.log 2>&1 &
+              sleep 2; export DISPLAY=:77
+              kwin_x11 > shell.log 2>&1 &
+              ;;
+            kde-wayland)
+              export XDG_SESSION_TYPE=wayland XDG_CURRENT_DESKTOP=KDE XWAYLAND_NO_GLAMOR=1
+              kwin_wayland --virtual --xwayland --no-lockscreen --width 1280 --height 800 > shell.log 2>&1 &
+              ;;
+          esac
           shell=$!
-          for i in $(seq 1 60); do [ -S "$XDG_RUNTIME_DIR/wayland-0" ] && break; sleep 1; done
+          if [ "$DESKTOP" != kde-x11 ]; then
+            for i in $(seq 1 60); do [ -S "$XDG_RUNTIME_DIR/wayland-0" ] && break; sleep 1; done
+            export WAYLAND_DISPLAY=wayland-0
+          fi
           sleep 10
-          ls -la "$XDG_RUNTIME_DIR" /tmp/.X11-unix || true
           kill -0 "$shell" || { echo "o compositor nao ficou de pe"; cat shell.log; exit 1; }
-          export WAYLAND_DISPLAY=wayland-0
-          n=$(ls /tmp/.X11-unix | sed 's/^X//' | sort -n | tail -1); export DISPLAY=":$n"
-          a=$(ls "$XDG_RUNTIME_DIR"/.mutter-Xwaylandauth.* "$XDG_RUNTIME_DIR"/xauth_* 2>/dev/null | head -1); [ -n "$a" ] && export XAUTHORITY="$a"
-          [ -n "$XAUTHORITY" ] || a=$(ls /tmp/xauth* 2>/dev/null | head -1); [ -n "$a" ] && export XAUTHORITY="$a"
+          if [ "$DESKTOP" != kde-x11 ]; then
+            n=$(ls /tmp/.X11-unix | sed 's/^X//' | sort -n | tail -1); export DISPLAY=":$n"
+            a=$(ls "$XDG_RUNTIME_DIR"/.mutter-Xwaylandauth.* 2>/dev/null | head -1); [ -n "$a" ] && export XAUTHORITY="$a"
+          fi
           echo "DISPLAY=$DISPLAY XAUTHORITY=$XAUTHORITY"
-          ./publicado/InfoPC --diagnostico | head -8
+          ./publicado/InfoPC --diagnostico | head -3
           ./publicado/InfoPC > app.log 2>&1 &
           app=$!
           sleep 30
           kill -0 "$app" || { echo "o programa fechou"; cat app.log; exit 1; }
-          id=$(xdotool search --onlyvisible --name '^InfoPC' | head -1)
-          echo "janela: $id"; [ -n "$id" ] || { xwininfo -root -tree | head -30; cat app.log; exit 1; }
-          xwininfo -id "$id" | grep -E 'Width|Height|xwininfo'
-          import -window "$id" "tela-$DESKTOP.png"
+          id=$(timeout 20 xdotool search --onlyvisible --name '^InfoPC' | head -1)
+          echo "janela: $id"; [ -n "$id" ] || { timeout 20 xwininfo -root -tree | head -30; cat app.log; exit 1; }
+          timeout 20 xprop -root _NET_WM_NAME _NET_SUPPORTING_WM_CHECK || true
+          timeout 20 xwininfo -id "$id" | grep -E 'Width|Height|xwininfo'
+          timeout 30 import -window "$id" "tela-$DESKTOP.png"
           kill "$app"; wait "$app" 2>/dev/null
           kill "$shell"
           exit 0
           EOF
-          dbus-run-session -- bash sessao.sh
-      - name: Sem XWayland
-        if: matrix.desktop == 'kde'
+          timeout 300 dbus-run-session -- bash sessao.sh
+      - name: Wayland sem XWayland, explica em vez de abortar
+        if: matrix.desktop == 'gnome'
         run: |
           export XDG_RUNTIME_DIR=/tmp/xdg-sem-x; mkdir -m 700 -p "$XDG_RUNTIME_DIR"
-          dbus-run-session -- bash -c '
-            kwin_wayland --virtual --no-lockscreen --width 1280 --height 800 > shell2.log 2>&1 & s=$!
-            for i in $(seq 1 60); do [ -S "$XDG_RUNTIME_DIR/wayland-0" ] && break; sleep 1; done; sleep 5
-            export WAYLAND_DISPLAY=wayland-0; unset DISPLAY
-            timeout 20 ./publicado/InfoPC > sem-x.txt 2>&1; c=$?
-            cat sem-x.txt; echo "codigo sem XWayland: $c"
-            kill $s
-            test "$c" = 1 && grep -q XWayland sem-x.txt
-          '
+          cat > sem-x.sh <<'EOF'
+          gnome-shell --wayland --headless --no-x11 --virtual-monitor 1280x800 > shell2.log 2>&1 &
+          s=$!
+          for i in $(seq 1 60); do [ -S "$XDG_RUNTIME_DIR/wayland-0" ] && break; sleep 1; done
+          sleep 5
+          export WAYLAND_DISPLAY=wayland-0
+          unset DISPLAY
+          timeout 30 ./publicado/InfoPC > sem-x.txt 2>&1
+          c=$?
+          cat sem-x.txt
+          echo "codigo sem XWayland: $c"
+          kill "$s"
+          test "$c" = 1 && grep -q XWayland sem-x.txt
+          EOF
+          timeout 180 dbus-run-session -- bash sem-x.sh
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -192,6 +216,7 @@ jobs:
             tela-*.png
             shell*.log
             app.log
+            sem-x.txt
           retention-days: 7
           if-no-files-found: warn
 
