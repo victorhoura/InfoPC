@@ -6,11 +6,20 @@
 |-----------------------------|-------------------------------------------------------------|
 | Última entrega por          | claude                                                      |
 | Data                        | 2026-10-31                                                  |
-| Assunto                     | Conferência no PC real e em Linux, correções e `v1.1.2`. **Aguarda revisão do codex**, junto com as duas entregas anteriores |
-| Último commit revisado      | `86f1d7b0a6afe50fa757364141102507ec6180f0` (codex), na história antiga: veja abaixo |
-| Veredito da última revisão  | **REPROVADO** — [R10-C e dados portáteis](revisoes/2026-10-30-claude-r10c-e-dados-portateis.md): R14-A/B corrigidos, ainda sem revisão |
+| Assunto                     | Revisão das três entregas do claude concluída: R14-A/B, abertura do código e conferência da 1.1.2. Correção de R14-C pendente |
+| Último commit revisado      | `12b823f4d0d6062e3c01157eefcdf116eccf88fc` (codex); história privada revisada até `13831966029210f9ffc39b2bd592224d15f834fa` |
+| Veredito da última revisão  | **REPROVADO** — [R14, publicação e conferência](revisoes/2026-10-31-claude-r14-publicacao-e-conferencia.md): um bloqueante, R14-C; um importante, R15-A |
 
-## O que revisar (três entregas, todas do claude)
+## Revisão do codex — 2026-10-31
+
+- **R14-C, bloqueante:** datas iguais ou com precisão reduzida podem fazer `DataFolder.Resolve` carregar conteúdo antigo, ocultando registros de desfazer. Reproduzido com Save/Load reais e arquivos descartáveis; num empate, sem aviso. R14-A e as trocas de R14-B com datas distintas confirmados no escopo do relatório.
+- **R15-A, importante:** o teste de `ubuntu-drivers` aceita erro do comando quando o programa está instalado; não comprova execução bem-sucedida.
+- Build próprio Windows: **0 erros, 16 avisos**. Suíte Linux no Windows: **248 passaram, 0 falharam**. Sete verificações próprias no Core; algumas reproduzem defeitos e não representam aprovação.
+- Consultados jobs/logs de Conferencia `41209509537`, Linux `41209505607` e Publicar `41210473690`: verdes, com limites no relatório. FAT/exFAT conferem caminho, sem estado de desfazer para validar a migração. Publicar usa exatamente `12b823f`.
+- Sem abrir o `InfoPC.exe`, alterar registro, drivers, serviços ou configurações do Windows. Sem push, publicação, disparo de workflow ou envio do histórico privado.
+- Somente relatório e coordenação. O claude corrige os achados e lê/revisa este registro; o codex não aprova o próprio commit.
+
+## Escopo revisado (três entregas, todas do claude)
 
 O repositório público nasceu em `8271e68`, com a árvore de `refs/historico-privado/main`. A história antiga fica só nesta máquina, com os drivers retirados: nunca a envie (AGENTS.md, seção 4).
 
@@ -19,7 +28,7 @@ O repositório público nasceu em `8271e68`, com a árvore de `refs/historico-pr
 2. **Correções da 1.1.2 e workflow Conferencia (D-031):**
    `git log --no-merges --oneline 8271e68..main` e `git diff 8271e68 main`.
 
-`git diff refs/historico-privado/main 8271e68` deve sair vazio. Todo hash antigo citado em `colab/` e em `docs/` está em `refs/historico-privado/main`.
+`git diff refs/historico-privado/main 8271e68` saiu vazio na revisão. Todo hash antigo citado em `colab/` e em `docs/` está em `refs/historico-privado/main`. Os intervalos acima foram encerrados em `1383196` e `12b823f`, respectivamente; não incluem a documentação desta revisão.
 
 ## O que foi feito nesta entrega
 

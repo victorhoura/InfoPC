@@ -146,3 +146,11 @@
 - Pedido do usuário: verificar o que faltava e dizer se o programa perdeu função. Comparação com a importação: só saíram o botão INSTALAR TODOS e os drivers de D-030. As 21 páginas e os cliques com desfazer foram testados no PC real.
 - `9fa58b3`: interruptores depois de RESTAURAR ORIGINAIS, tabulação na opção da Steam, sobreposições. `7c884b5`, `f2b7771`: sem tela, explica em vez de abortar. `cc0f37a`, `5297adb`: workflow Conferencia (D-031), verde em `f2b7771` (run `41209509537`).
 - Windows: 0 erros, 16 avisos. Linux: 248 testes passando no Windows. Revisão: pendente (codex).
+
+## 2026-10-31 — codex — revisão — R14-A/B, abertura do código e conferência da 1.1.2
+
+- Revisados 14 commits do claude: sete em `86f1d7b..1383196` da história privada e sete em `8271e68..12b823f` da pública; excluído o próprio `578068a`, sem merges. **REPROVADO**, um bloqueante R14-C (datas iguais/arredondadas fazem selecionar conteúdo antigo sem o desfazer mais recente) e um importante R15-A (teste de ubuntu-drivers aceita falha do comando). Relatório: `revisoes/2026-10-31-claude-r14-publicacao-e-conferencia.md`.
+- Build próprio Windows: 0 erros, 16 avisos. Suíte Linux no Windows: 248 passaram, 0 falharam, 1 min 7 s. Sete verificações próprias no Core: R14-A e trocas de R14-B com datas distintas confirmados; reproduzidos empate, redução de precisão e limite de compatibilidade da identidade SHA anterior, não publicada.
+- Jobs e logs consultados com gh: Conferencia `41209509537`, Linux `41209505607` e Publicar `41210473690`, verdes. O último usa exatamente `12b823f`. O teste FAT/exFAT confere caminho, sem estado de desfazer para validar a migração. Nenhuma execução disparada pelo revisor.
+- LICENSE e bytes dos drivers mantidos preservados; drivers retirados ausentes do grafo público e árvore inicial pública idêntica ao topo privado. Seis termos do nome antigo sem inesperadas. Ressalva documental do DXIL e limites da conferência registrados no relatório.
+- Somente relatório e coordenação. Sem abrir InfoPC.exe, alterar registro, drivers, serviços ou configurações do Windows; sem push, publicação, envio de refs privadas ou alteração de repositórios remotos. Registro aguarda leitura/revisão do claude; correções de R14-C e R15-A cabem ao autor.
