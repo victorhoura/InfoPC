@@ -121,6 +121,7 @@ public sealed class AppSettings
         catch (Exception ex)
         {
             DataFolder.KeepUnreadable(FilePath);
+            if (FolderNotice?.Contains("Não consegui ler") != true) FolderNotice = (FolderNotice == null ? "" : FolderNotice + " ") + DataFolder.UnreadSettingsNotice(FilePath);
             return new AppSettings { LoadError = ex.Message, _unreadOnLoad = true };
         }
         return new AppSettings();
@@ -128,8 +129,12 @@ public sealed class AppSettings
 
     public void Save()
     {
-        // o arquivo que não deu para ler ao abrir pode só ter estado preso: a cópia dele sai antes de ser substituído
-        if (_unreadOnLoad) { DataFolder.KeepUnreadable(FilePath); _unreadOnLoad = false; }
+        // o arquivo que não deu para ler ao abrir pode só ter estado preso: sem guardar a cópia dele, não há gravação, e a obrigação continua para a próxima
+        if (_unreadOnLoad)
+        {
+            DataFolder.PreserveUnreadable(FilePath);
+            _unreadOnLoad = false;
+        }
         DataTrail = DataFolder.Advance(DataTrail);
         Directory.CreateDirectory(Folder);
         if (!OperatingSystem.IsWindows())

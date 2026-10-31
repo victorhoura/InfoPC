@@ -1,6 +1,6 @@
 # Revisao R14-D/E e v1.1.4. Nao abre o InfoPC.exe nem altera o sistema.
 # So usa o Core real e arquivos descartaveis em obj/review do worktree.
-# Saida 0 confirma os resultados, inclusive BUG-*: nao significa aprovacao.
+# Saida 0 confirma os resultados; R14-F/G agora conferem a correcao (claude). Nao significa aprovacao.
 $ErrorActionPreference = 'Stop'
 $repo = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..\..'))
 $reviewDir = Join-Path $repo 'obj\review\r14de-data'
@@ -93,7 +93,7 @@ Log("corrupt-both-directions", new { passed = 2 });
     Log("save-after-unlock", new { backupPreserved = true });
 }
 
-// BUG: um Save falha enquanto o mesmo arquivo continua preso; a segunda
+// R14-F: um Save falha enquanto o mesmo arquivo continua preso; a segunda
 // tentativa usa o mesmo objeto (como Services.Save), sem reabrir o programa.
 {
     var c = new Case(root, "retry-save");
@@ -110,11 +110,11 @@ Log("corrupt-both-directions", new { passed = 2 });
     Check(File.ReadAllText(Path.Combine(c.P, "settings.json")).Contains("undo-original"), "first save damaged original");
     empty.Save();
     bool originalRetained = c.AllSettings().Any(p => File.ReadAllText(p).Contains("undo-original"));
-    Check(c.Groups(c.P) == "" && !originalRetained && !File.Exists(Path.Combine(c.P, "settings.json.tmp")), "BUG retry no longer reproduces; convert expectation");
-    Log("BUG-save-retry", new { firstSaveFailed = failed, secondSaveSucceeded = true, loaded = c.Groups(c.P), originalRetained });
+    Check(c.Groups(c.P) == "" && originalRetained && File.ReadAllText(Path.Combine(c.P, "settings.json.corrompido")).Contains("undo-original"), "retry must preserve the original");
+    Log("save-retry", new { firstSaveFailed = failed, secondSaveSucceeded = true, loaded = c.Groups(c.P), originalRetained });
 }
 
-// BUG: a copia .corrompido esta presa, mas o settings.json ja foi liberado.
+// R14-F: a copia .corrompido esta presa, mas o settings.json ja foi liberado.
 // O Save tambem deve recusar sobrescrever se nao consegue preservar a origem.
 {
     var c = new Case(root, "backup-blocked");
@@ -129,10 +129,10 @@ Log("corrupt-both-directions", new { passed = 2 });
         empty.Save();
     }
     bool originalRetained = c.AllSettings().Any(p => File.ReadAllText(p).Contains("undo-original"));
-    Check(c.Groups(c.P) == "" && File.ReadAllText(backup) == "older-backup" && !originalRetained && !File.Exists(Path.Combine(c.P, "settings.json.tmp")), "BUG blocked backup no longer reproduces; convert expectation");
-    Log("BUG-backup-blocked", new { saveSucceeded = true, loaded = c.Groups(c.P), backup = File.ReadAllText(backup), originalRetained });
+    Check(c.Groups(c.P) == "" && File.ReadAllText(backup) == "older-backup" && originalRetained, "blocked backup must preserve the original elsewhere");
+    Log("backup-blocked", new { saveSucceeded = true, loaded = c.Groups(c.P), backup = File.ReadAllText(backup), originalRetained });
 }
-// BUG: a legibilidade muda depois da prechecagem. F prende CanRead nos retries;
+// R14-G: a legibilidade muda depois da prechecagem. F prende CanRead nos retries;
 // P so e preso depois que a sua checagem inicial ja passou. Nenhum JSON ou
 // DataTrail e adulterado. O resultado e uma troca funcional para a ancestral.
 for (int iteration = 0; iteration < 3; iteration++)
@@ -159,9 +159,9 @@ for (int iteration = 0; iteration < 3; iteration++)
     try { chosen = c.Resolve(out notice); }
     finally { worker.Join(); holdPortable?.Dispose(); holdFallback.Dispose(); }
     Check(workerError == null, "late lock setup failed: " + workerError);
-    Check(chosen == c.F && c.Groups(chosen) == "old" && c.Groups(c.P) == "old,new", "BUG late lock no longer reproduces; convert expectation");
-    Check(notice!.Contains("N\u00e3o consegui copiar") && !notice.Contains("N\u00e3o consegui ler"), "late lock unexpectedly classified as unreadable");
-    Log("BUG-late-read-lock-" + iteration, new { loaded = c.Groups(chosen), portable = c.Groups(c.P), notice });
+    Check(chosen == c.P && c.Groups(chosen) == "old,new" && c.Groups(c.F) == "old", "late lock must keep the later copy");
+    Check(notice == null || !notice.Contains("N\u00e3o consegui copiar"), "late lock must not report a failed copy");
+    Log("late-read-lock-" + iteration, new { loaded = c.Groups(chosen), portable = c.Groups(c.P), notice });
 }
 Console.WriteLine($"CHECKS={checks}; ROOT={root}");
 
@@ -185,7 +185,7 @@ sealed class Case
     }
     public string Groups(string dir) { AppSettings.Folder = dir; return string.Join(",", AppSettings.Load().GroupsAdded); }
     public IEnumerable<string> AllSettings() => Directory.EnumerateFiles(Root, "*", SearchOption.AllDirectories)
-        .Where(p => Path.GetFileName(p).Equals("settings.json", StringComparison.OrdinalIgnoreCase) || Path.GetFileName(p).Equals("settings.json.corrompido", StringComparison.OrdinalIgnoreCase));
+        .Where(p => Path.GetFileName(p).Equals("settings.json", StringComparison.OrdinalIgnoreCase) || Path.GetFileName(p).StartsWith("settings.json.corrompido", StringComparison.OrdinalIgnoreCase));
     public static FileStream Hold(string dir) => new(Path.Combine(dir, "settings.json"), FileMode.Open, FileAccess.Read, FileShare.None);
 }
 '@

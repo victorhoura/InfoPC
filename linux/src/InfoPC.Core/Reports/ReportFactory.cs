@@ -13,7 +13,7 @@ public static class AppInfo
         string? v = a.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
         if (string.IsNullOrWhiteSpace(v)) v = a.GetName().Version?.ToString(3);
         int plus = v?.IndexOf('+') ?? -1;
-        return (plus >= 0 ? v![..plus] : v) ?? "1.1.4";
+        return (plus >= 0 ? v![..plus] : v) ?? "1.1.5";
     }
 
     public const string FooterNote = "Dados lidos de /proc, /sys, do driver da placa de vídeo e dos sensores do kernel; podem variar conforme o hardware.";

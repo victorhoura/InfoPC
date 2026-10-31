@@ -20,6 +20,9 @@ public static class DataFolder
     private enum Relation { Same, FirstNewer, SecondNewer, Diverged }
     private enum TrailState { None, Present, Corrupt, Unreadable }
 
+    /// <summary>Uma cópia lida uma vez só: se o arquivo for preso depois da leitura, a comparação continua valendo.</summary>
+    private sealed record Copy(string Path, TrailState State, List<string>? Marks, byte[]? Settings, DateTime Time);
+
     /// <summary>
     /// 16 letras hexadecimais a partir da máquina e do usuário, para não deixar o nome de ninguém visível na pasta do pen drive. É o FNV-1a de 64 bits, e não SHA-256:
     /// no Linux o SHA-256 do .NET carrega o libssl, e o programa abortaria ao abrir num sistema sem ele. Isto só escolhe um nome de pasta, não protege nada.
@@ -48,13 +51,13 @@ public static class DataFolder
         string? usable = portable != null && Writable(portable) ? portable : Writable(fallback) ? fallback : null;
 
         // a pasta em uso vem primeiro: num empate, ela fica
-        var found = new List<string>();
+        var found = new List<Copy>();
         foreach (var d in new[] { usable, portable, fallback, legacy }.OfType<string>())
-            if (HasData(d) && !found.Any(f => Same(f, d))) found.Add(d);
+            if (HasData(d) && !found.Any(f => Same(f.Path, d))) found.Add(ReadCopy(d));
 
         // arquivo em uso não é versão anterior: sem ler, não dá para comparar, e nenhuma cópia é trocada
-        var unread = found.Where(d => !CanRead(d)).ToList();
-        string? newest = Latest(found.Except(unread).ToList(), out var others);
+        var unread = found.Where(c => c.State == TrailState.Unreadable).Select(c => c.Path).ToList();
+        string? newest = Latest(found.Where(c => c.State != TrailState.Unreadable).ToList(), out var others);
 
         if (usable == null)
         {
@@ -92,18 +95,18 @@ public static class DataFolder
     /// A cópia a usar: só disputam as que nenhuma outra prova serem anteriores, para uma ancestral nunca voltar a ganhar. Entre as que sobram, vale a data claramente maior;
     /// sem isso, a primeira, que é a pasta em uso. <paramref name="others"/> são as cópias que não dá para ordenar, ou danificadas, e não foram escolhidas.
     /// </summary>
-    private static string? Latest(List<string> found, out List<string> others)
+    private static string? Latest(List<Copy> found, out List<string> others)
     {
         others = new List<string>();
-        var tips = found.Where(d => !found.Any(o => !Same(o, d) && Compare(o, d) == Relation.FirstNewer)).ToList();
-        string? latest = tips.FirstOrDefault() ?? found.FirstOrDefault();
+        var tips = found.Where(d => !found.Any(o => !Same(o.Path, d.Path) && Compare(o, d) == Relation.FirstNewer)).ToList();
+        Copy? latest = tips.FirstOrDefault() ?? found.FirstOrDefault();
         if (latest == null) return null;
         foreach (var d in tips.Skip(1))
-            if (Compare(latest, d) == Relation.Diverged && DataTime(d) - DataTime(latest) > Tolerance) latest = d;
-        string chosen = latest;
-        bool proven = ReadTrail(chosen, out _) == TrailState.Present;
-        others = found.Where(d => !Same(d, chosen) && (Compare(chosen, d) == Relation.Diverged || (proven && ReadTrail(d, out _) == TrailState.Corrupt))).ToList();
-        return chosen;
+            if (Compare(latest, d) == Relation.Diverged && d.Time - latest.Time > Tolerance) latest = d;
+        Copy chosen = latest;
+        others = found.Where(d => !Same(d.Path, chosen.Path) && (Compare(chosen, d) == Relation.Diverged || (chosen.State == TrailState.Present && d.State == TrailState.Corrupt)))
+                      .Select(d => d.Path).ToList();
+        return chosen.Path;
     }
 
     /// <summary>
@@ -136,62 +139,52 @@ public static class DataFolder
         catch { return dir; }
     }
 
-    private static Relation Compare(string a, string b)
+    private static Relation Compare(Copy a, Copy b)
     {
-        var (first, second) = (Trail(a), Trail(b));
-        if (first != null && second != null)
+        if (a.Marks != null && b.Marks != null)
         {
-            if (first[^1] == second[^1]) return Relation.Same;
-            if (second.Contains(first[^1])) return Relation.SecondNewer;
-            return first.Contains(second[^1]) ? Relation.FirstNewer : Relation.Diverged;
+            if (a.Marks[^1] == b.Marks[^1]) return Relation.Same;
+            if (b.Marks.Contains(a.Marks[^1])) return Relation.SecondNewer;
+            return a.Marks.Contains(b.Marks[^1]) ? Relation.FirstNewer : Relation.Diverged;
         }
         // sem trilha, a cópia é de uma versão anterior: quem já gravou com trilha continuou a partir dela
-        if (first != null) return Relation.FirstNewer;
-        if (second != null) return Relation.SecondNewer;
-        var gap = DataTime(a) - DataTime(b);
+        if (a.Marks != null) return Relation.FirstNewer;
+        if (b.Marks != null) return Relation.SecondNewer;
+        var gap = a.Time - b.Time;
         if (gap.Duration() > Tolerance) return gap > TimeSpan.Zero ? Relation.FirstNewer : Relation.SecondNewer;
-        return SameSettings(a, b) ? Relation.Same : Relation.Diverged;
+        bool same = a.Settings == null || b.Settings == null ? a.Settings == b.Settings : a.Settings.AsSpan().SequenceEqual(b.Settings);
+        return same ? Relation.Same : Relation.Diverged;
     }
 
-    private static List<string>? Trail(string dir) => ReadTrail(dir, out var marks) == TrailState.Present ? marks : null;
-
-    /// <summary>Sem trilha (versão anterior), com trilha, danificado ou impossível de ler agora: as respostas são diferentes, e confundi-las esconderia o desfazer.</summary>
-    private static TrailState ReadTrail(string dir, out List<string>? marks)
+    /// <summary>Tenta algumas vezes, porque um antivírus costuma prender o arquivo só por um instante. Sem trilha (versão anterior), com trilha, danificado ou impossível de ler agora: confundir essas respostas esconderia o desfazer.</summary>
+    private static Copy ReadCopy(string dir)
     {
-        marks = null;
         string settings = Path.Combine(dir, "settings.json");
-        try
-        {
-            if (!File.Exists(settings)) return TrailState.None;
-            using var doc = JsonDocument.Parse(File.ReadAllBytes(settings));
-            if (doc.RootElement.ValueKind != JsonValueKind.Object || !doc.RootElement.TryGetProperty("DataTrail", out var trail) || trail.ValueKind != JsonValueKind.Array) return TrailState.None;
-            marks = trail.EnumerateArray().Where(m => m.ValueKind == JsonValueKind.String).Select(m => m.GetString()!).ToList();
-            return marks.Count > 0 ? TrailState.Present : TrailState.None;
-        }
-        catch (JsonException) { return TrailState.Corrupt; }
-        catch { return TrailState.Unreadable; }
-    }
-
-    /// <summary>Tenta algumas vezes: um antivírus costuma prender o arquivo só por um instante.</summary>
-    private static bool CanRead(string dir)
-    {
+        byte[]? bytes = null;
         for (int i = 0; i < 3; i++)
         {
-            if (ReadTrail(dir, out _) != TrailState.Unreadable) return true;
-            if (i < 2) Thread.Sleep(100);
+            try
+            {
+                if (File.Exists(settings)) bytes = File.ReadAllBytes(settings);
+                return bytes == null ? new Copy(dir, TrailState.None, null, null, DataTime(dir)) : Parse(dir, bytes);
+            }
+            catch { if (i < 2) Thread.Sleep(100); }
         }
-        return false;
+        return new Copy(dir, TrailState.Unreadable, null, null, DataTime(dir));
     }
 
-    private static bool SameSettings(string a, string b)
+    private static Copy Parse(string dir, byte[] bytes)
     {
         try
         {
-            string first = Path.Combine(a, "settings.json"), second = Path.Combine(b, "settings.json");
-            if (!File.Exists(first) || !File.Exists(second)) return File.Exists(first) == File.Exists(second);
-            return File.ReadAllBytes(first).AsSpan().SequenceEqual(File.ReadAllBytes(second));
+            using var doc = JsonDocument.Parse(bytes);
+            List<string>? marks = null;
+            if (doc.RootElement.ValueKind == JsonValueKind.Object && doc.RootElement.TryGetProperty("DataTrail", out var trail) && trail.ValueKind == JsonValueKind.Array)
+                marks = trail.EnumerateArray().Where(m => m.ValueKind == JsonValueKind.String).Select(m => m.GetString()!).ToList();
+            bool has = marks is { Count: > 0 };
+            return new Copy(dir, has ? TrailState.Present : TrailState.None, has ? marks : null, bytes, DataTime(dir));
         }
-        catch { return false; }
+        catch (JsonException) { return new Copy(dir, TrailState.Corrupt, null, bytes, DataTime(dir)); }
     }
 
     public static bool Writable(string dir)
@@ -279,9 +272,29 @@ public static class DataFolder
         foreach (var d in Directory.GetDirectories(from)) CopyTree(d, Path.Combine(to, Path.GetFileName(d)));
     }
 
-    /// <summary>Guarda um settings.json que não deu para ler. O próximo Save o sobrescreveria, com todos os registros de desfazer dele. Preso por outro programa, a cópia falha, e o Save tenta de novo.</summary>
+    /// <summary>Tentativa ao abrir: guarda um settings.json que não deu para ler, se der. Quem precisa da garantia é o Save, com <see cref="PreserveUnreadable"/>.</summary>
     public static void KeepUnreadable(string settingsFile)
     {
-        try { File.Copy(settingsFile, settingsFile + ".corrompido", true); } catch { }
+        try { PreserveUnreadable(settingsFile); } catch { }
     }
+
+    /// <summary>
+    /// Guarda o settings.json que não deu para ler ao abrir, com seus registros de desfazer, e lança se não conseguir: o arquivo só pode ser substituído depois disso.
+    /// Não sobrescreve a cópia anterior, que pode ter outros registros: com conteúdo diferente, ou presa, esta vai para outro nome.
+    /// </summary>
+    public static void PreserveUnreadable(string settingsFile)
+    {
+        if (!File.Exists(settingsFile)) return;
+        byte[] content = File.ReadAllBytes(settingsFile);
+        string target = settingsFile + ".corrompido";
+        if (File.Exists(target))
+        {
+            try { if (File.ReadAllBytes(target).AsSpan().SequenceEqual(content)) return; } catch { }
+            target = $"{target}-{DateTime.Now:yyyyMMdd-HHmmss-fff}";
+        }
+        File.Copy(settingsFile, target);
+    }
+
+    public static string UnreadSettingsNotice(string settingsFile) =>
+        $"Não consegui ler {settingsFile}. O InfoPC abriu sem esses dados, então os registros de desfazer dele não aparecem aqui. Feche o programa que pode estar usando o arquivo e abra o InfoPC de novo. Antes de gravar por cima, o InfoPC guarda uma cópia em \".corrompido\"; sem conseguir guardar, não grava.";
 }

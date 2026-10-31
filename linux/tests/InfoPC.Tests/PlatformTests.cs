@@ -621,6 +621,96 @@ public sealed class DataFolderTests : IDisposable
     }
 
     [Fact]
+    public void A_save_that_could_not_preserve_the_file_fails_and_the_next_one_still_preserves_it()
+    {
+        // R14-F: o mesmo objeto tenta de novo, como o Services.Save, sem reabrir o programa
+        SaveFrom(null, Target, new[] { "desfazer" }, Old);
+        string before = AppSettings.Folder;
+        try
+        {
+            AppSettings.Folder = Target;
+            AppSettings loaded;
+            using (Hold(Target))
+            {
+                loaded = AppSettings.Load();
+                Assert.ThrowsAny<Exception>(() => loaded.Save());
+            }
+            Assert.Equal(new[] { "desfazer" }, LoadGroups(Target));
+
+            loaded.Save();
+            Assert.Contains("desfazer", File.ReadAllText(Path.Combine(Target, "settings.json.corrompido")));
+            Assert.Empty(LoadGroups(Target));
+        }
+        finally { AppSettings.Folder = before; }
+    }
+
+    [Fact]
+    public void A_held_backup_does_not_lose_the_file_nor_the_older_backup()
+    {
+        // R14-F: só a cópia anterior está presa, e ela tem outros registros
+        SaveFrom(null, Target, new[] { "desfazer" }, Old);
+        string backup = Path.Combine(Target, "settings.json.corrompido");
+        File.WriteAllText(backup, "backup-anterior");
+        string before = AppSettings.Folder;
+        try
+        {
+            AppSettings.Folder = Target;
+            AppSettings loaded;
+            using (new FileStream(backup, FileMode.Open, FileAccess.Read, FileShare.None))
+            {
+                using (Hold(Target)) loaded = AppSettings.Load();
+                loaded.Save();
+            }
+            Assert.Equal("backup-anterior", File.ReadAllText(backup));
+            string kept = Assert.Single(Directory.GetFiles(Target, "settings.json.corrompido-*"));
+            Assert.Contains("desfazer", File.ReadAllText(kept));
+        }
+        finally { AppSettings.Folder = before; }
+    }
+
+    [Fact]
+    public void Saving_twice_after_a_damaged_load_does_not_multiply_the_backups()
+    {
+        Put("exe/dados/" + Me + "/settings.json", "{ quebrado");
+        string before = AppSettings.Folder;
+        try
+        {
+            AppSettings.Folder = Target;
+            AppSettings.Load().Save();
+            Assert.Equal("{ quebrado", File.ReadAllText(Path.Combine(Target, "settings.json.corrompido")));
+            Assert.Empty(Directory.GetFiles(Target, "settings.json.corrompido-*"));
+            Assert.Contains("Não consegui ler", AppSettings.FolderNotice);
+        }
+        finally { AppSettings.Folder = before; }
+    }
+
+    [Fact]
+    public void A_copy_held_after_it_was_read_is_still_recognized_as_the_later_one()
+    {
+        // R14-G: a portátil é presa depois de lida, enquanto o fallback ainda está sendo tentado
+        var first = SaveFrom(null, Fallback, new[] { "old" }, Old);
+        SaveFrom(first, Target, new[] { "old", "new" }, Old);
+        var holdFallback = Hold(Fallback);
+        FileStream? holdPortable = null;
+        var worker = new Thread(() =>
+        {
+            Thread.Sleep(120);
+            holdPortable = Hold(Target);
+            holdFallback.Dispose();
+        });
+        worker.Start();
+        string chosen;
+        string? notice;
+        try { chosen = Resolve(out notice); }
+        finally { worker.Join(); holdPortable?.Dispose(); holdFallback.Dispose(); }
+
+        Assert.Equal(Target, chosen);
+        Assert.DoesNotContain("copiar", notice ?? "");
+        Assert.Equal(new[] { "old", "new" }, LoadGroups(Target));
+        Assert.Equal(new[] { "old" }, LoadGroups(Fallback));
+    }
+
+    [Fact]
     public void A_copy_proven_older_never_wins_between_two_branches()
     {
         // R14-E: a antiga pasta "dados" é ancestral da portátil, e o fallback é outra ramificação; ela tem a data maior e, ainda assim, não pode ganhar
