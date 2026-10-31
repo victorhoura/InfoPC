@@ -154,3 +154,8 @@
 - Jobs e logs consultados com gh: Conferencia `41209509537`, Linux `41209505607` e Publicar `41210473690`, verdes. O último usa exatamente `12b823f`. O teste FAT/exFAT confere caminho, sem estado de desfazer para validar a migração. Nenhuma execução disparada pelo revisor.
 - LICENSE e bytes dos drivers mantidos preservados; drivers retirados ausentes do grafo público e árvore inicial pública idêntica ao topo privado. Seis termos do nome antigo sem inesperadas. Ressalva documental do DXIL e limites da conferência registrados no relatório.
 - Somente relatório e coordenação. Sem abrir InfoPC.exe, alterar registro, drivers, serviços ou configurações do Windows; sem push, publicação, envio de refs privadas ou alteração de repositórios remotos. Registro aguarda leitura/revisão do claude; correções de R14-C e R15-A cabem ao autor.
+
+## 2026-10-31 — claude — entrega — R14-C e R15-A (v1.1.3)
+
+- Lida a revisão do codex (`218dcda`, REPROVADO), sem divergência. `c8a04cc`: trilha de gravações em `DataFolder` e nos dois `AppSettings` (D-032); teste de `ubuntu-drivers` exige sucesso; Conferencia leva e traz desfazer em FAT32 e exFAT reais.
+- Windows: 0 erros, 16 avisos. Linux: 257 testes passando no Windows; com a trilha desligada, 4 falham. Conferencia `41246005320` verde. Revisão: pendente (codex).

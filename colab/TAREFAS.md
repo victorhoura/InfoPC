@@ -19,6 +19,7 @@ Legenda: `[ ]` pendente · `[~]` em andamento · `[x]` concluída · responsáve
 - [x] Compilar sem alterações: 0 erros, 16 avisos; pacote portátil de ~197 MB (claude)
 - [x] Mapear a arquitetura em `docs/ARQUITETURA.md` (claude)
 - [x] Listar onde o código viola os requisitos: ver Fase 3 (claude)
+- [ ] Revisão cruzada da correção de R14-C e R15-A e da `v1.1.3` (`218dcda..main`, só commits do claude) (codex).
 - [x] Revisão cruzada das correções da 1.1.2 e do workflow Conferencia (`8271e68..12b823f`) (codex, 2026-10-31). R15-A importante no teste de ubuntu-drivers; relatório abaixo.
 - [x] Revisão cruzada da abertura do código (D-030): retirada dos drivers, `THIRD-PARTY-NOTICES.txt` e versão 1.1.1 (codex, 2026-10-31). Créditos e drivers mantidos preservados; ressalva documental do DXIL no relatório.
 - [x] Revisão cruzada de R14-A/B, da identidade sem `libssl` e do workflow de publicação (`86f1d7b..1383196` da história privada) (codex, 2026-10-31). **REPROVADO**, R14-C bloqueante na seleção dos dados.
@@ -50,7 +51,7 @@ Legenda: `[ ]` pendente · `[~]` em andamento · `[x]` concluída · responsáve
 - [x] Revisão cruzada da Fase 3 junto com todo o histórico até `9b168be`: **REPROVADO** (codex, 2026-10-28).
 - [~] FPS estimado sem chave, Drivers com VERIFICAR TUDO, perfil de jogo e RESTAURAR ORIGINAL da Steam: conferidos no PC real (claude, 2026-10-31). Falta o FPS **com** chave, que depende de uma chave da HowManyFPS (usuário).
 - [x] Conferir os termos de redistribuição dos drivers de `Drivers/` e as licenças "a conferir": feito, com CH340, CP210x e FTDI retirados (D-030, `docs/UPSTREAM.md`) (claude, 2026-10-30).
-- [~] Gerar o pacote final (D-029, D-030): `v1.1.2` publicada como pré-lançamento no repositório público, com `InfoPC.exe` aberto em Windows limpo do CI e usado no PC real (claude, 2026-10-31).
+- [~] Gerar o pacote final (D-029, D-030): `v1.1.3` publicada como pré-lançamento no repositório público, com `InfoPC.exe` aberto em Windows limpo do CI e usado no PC real (claude, 2026-10-31).
 
 ## Fase 4 — Edição Linux (D-017 a D-023)
 
@@ -103,8 +104,8 @@ Achado fora da revisão (claude, 2026-10-30): com os dados junto do programa, o 
 - [x] Mesmo padrão do R04 em outros desfazer: COM/inicialização Windows (`b04a026`) inspecionados/compilados; Otimizador e inicialização Linux (`766436a`, `d6624c2`) com testes passando. R04-C (leitura parcial na Otimização Windows) corrigido em `aea3c39` (claude; codex confirmou captura revertida, nova tentativa com persistência antes da escrita e preservação de backups anteriores, 2026-10-30; sem alterar o plano real).
 - [x] R14-A — **BLOQUEANTE:** fallback Linux ignorado na migração do D-028. Corrigido em `9f59043` (claude); codex confirmou com Save/Load e `AppSettings.ResolveFolder()` reais em diretórios descartáveis, 2026-10-31.
 - [x] R14-B — **BLOQUEANTE:** retorno direto a fallback antigo/vazio. Correção de `9f59043` confirmada pelo codex em 2026-10-31 para dados com datas distintas, nos dois sentidos. A seleção ainda falha em datas iguais/arredondadas: complemento R14-C abaixo, sem aprovação integral da migração.
-- [ ] R14-C — **BLOQUEANTE:** `DataFolder.Resolve` usa somente a data do `settings.json` e, em empate, prefere a pasta gravável. Conteúdos distintos com a mesma data fazem carregar o fallback antigo sem aviso; redução de precisão pode inverter a escolha e arquivar o estado correto. Reproduzido com Save/Load reais sem alterar o sistema (codex, 2026-10-31; claude corrige). [Relatório](revisoes/2026-10-31-claude-r14-publicacao-e-conferencia.md).
-- [ ] R15-A — **IMPORTANTE:** `ConferenciaTests.cs:73` aceita erro de `ubuntu-drivers devices` quando o programa está instalado; `UbuntuRecommended()==null` também aceita falha. Conferir o resultado do comando para que o workflow comprove a execução bem-sucedida (codex, 2026-10-31; claude corrige). Mesmo relatório de R14-C.
+- [~] R14-C — **BLOQUEANTE:** `DataFolder.Resolve` usa somente a data do `settings.json` e, em empate, prefere a pasta gravável. Conteúdos distintos com a mesma data fazem carregar o fallback antigo sem aviso; redução de precisão pode inverter a escolha e arquivar o estado correto. Reproduzido com Save/Load reais sem alterar o sistema (codex, 2026-10-31; claude corrige). [Relatório](revisoes/2026-10-31-claude-r14-publicacao-e-conferencia.md). Corrigido em `c8a04cc` (claude, 2026-10-31; D-032). Aguarda revisão do codex.
+- [~] R15-A — **IMPORTANTE:** `ConferenciaTests.cs:73` aceita erro de `ubuntu-drivers devices` quando o programa está instalado; `UbuntuRecommended()==null` também aceita falha. Conferir o resultado do comando para que o workflow comprove a execução bem-sucedida (codex, 2026-10-31; claude corrige). Mesmo relatório de R14-C. Corrigido em `c8a04cc` (claude, 2026-10-31). Aguarda revisão do codex.
 
 - 16 avisos de nulabilidade no build do original (`MainWindow.Oc.cs`, `DiskHealth.cs`). Não corrigir de carona.
 - Não há testes automatizados no original (a edição Linux tem a suíte em `linux/tests`).

@@ -6,69 +6,38 @@
 |-----------------------------|-------------------------------------------------------------|
 | Última entrega por          | claude                                                      |
 | Data                        | 2026-10-31                                                  |
-| Assunto                     | Revisão das três entregas do claude concluída: R14-A/B, abertura do código e conferência da 1.1.2. Correção de R14-C pendente |
-| Último commit revisado      | `12b823f4d0d6062e3c01157eefcdf116eccf88fc` (codex); história privada revisada até `13831966029210f9ffc39b2bd592224d15f834fa` |
-| Veredito da última revisão  | **REPROVADO** — [R14, publicação e conferência](revisoes/2026-10-31-claude-r14-publicacao-e-conferencia.md): um bloqueante, R14-C; um importante, R15-A |
+| Assunto                     | Correção de R14-C e R15-A e `v1.1.3`. **Aguarda revisão do codex** |
+| Último commit revisado      | `12b823f4d0d6062e3c01157eefcdf116eccf88fc` (codex; relatório `218dcda`, lido pelo claude) |
+| Veredito da última revisão  | **REPROVADO** — [R14, publicação e conferência](revisoes/2026-10-31-claude-r14-publicacao-e-conferencia.md): R14-C e R15-A, tratados aqui, com a resposta no relatório |
 
-## Revisão do codex — 2026-10-31
+## O que revisar
 
-- **R14-C, bloqueante:** datas iguais ou com precisão reduzida podem fazer `DataFolder.Resolve` carregar conteúdo antigo, ocultando registros de desfazer. Reproduzido com Save/Load reais e arquivos descartáveis; num empate, sem aviso. R14-A e as trocas de R14-B com datas distintas confirmados no escopo do relatório.
-- **R15-A, importante:** o teste de `ubuntu-drivers` aceita erro do comando quando o programa está instalado; não comprova execução bem-sucedida.
-- Build próprio Windows: **0 erros, 16 avisos**. Suíte Linux no Windows: **248 passaram, 0 falharam**. Sete verificações próprias no Core; algumas reproduzem defeitos e não representam aprovação.
-- Consultados jobs/logs de Conferencia `41209509537`, Linux `41209505607` e Publicar `41210473690`: verdes, com limites no relatório. FAT/exFAT conferem caminho, sem estado de desfazer para validar a migração. Publicar usa exatamente `12b823f`.
-- Sem abrir o `InfoPC.exe`, alterar registro, drivers, serviços ou configurações do Windows. Sem push, publicação, disparo de workflow ou envio do histórico privado.
-- Somente relatório e coordenação. O claude corrige os achados e lê/revisa este registro; o codex não aprova o próprio commit.
+`git log --no-merges --oneline 12b823f..main` e `git diff 218dcda main`. Só o commit do claude; `218dcda` é o relatório do próprio codex.
 
-## Escopo revisado (três entregas, todas do claude)
+A história anterior a `8271e68` fica só nesta máquina, em `refs/historico-privado/main`, com os drivers retirados. Nunca a envie (AGENTS.md, seção 4).
 
-O repositório público nasceu em `8271e68`, com a árvore de `refs/historico-privado/main`. A história antiga fica só nesta máquina, com os drivers retirados: nunca a envie (AGENTS.md, seção 4).
-
-1. **R14-A/B, identidade sem `libssl`, workflow de publicação e abertura do código (D-030):**
-   `git log --no-merges --oneline 86f1d7b..refs/historico-privado/main` e `git diff 86f1d7b refs/historico-privado/main`.
-2. **Correções da 1.1.2 e workflow Conferencia (D-031):**
-   `git log --no-merges --oneline 8271e68..main` e `git diff 8271e68 main`.
-
-`git diff refs/historico-privado/main 8271e68` saiu vazio na revisão. Todo hash antigo citado em `colab/` e em `docs/` está em `refs/historico-privado/main`. Os intervalos acima foram encerrados em `1383196` e `12b823f`, respectivamente; não incluem a documentação desta revisão.
-
-## O que foi feito nesta entrega
-
-O usuário perguntou se o programa perdeu função em relação ao início e pediu para verificar o que faltava. A comparação com a importação (`fc4571c`) mostra que saíram só o botão INSTALAR TODOS e os drivers de D-030.
+## O que foi feito
 
 | Commit | O quê |
 |--------|-------|
-| `9fa58b3` | Interruptores da Otimização ficavam errados depois de RESTAURAR ORIGINAIS: `box.IsChecked = ...` apagava o binding (já no original). `Vdf.Esc` trocava a tabulação de outra opção da Steam por `\t`, e o arquivo não voltava igual. Sobreposições na Visão geral, Placa de vídeo, Gargalo e Stress test. Versão 1.1.2 |
-| `cc0f37a`, `5297adb` | Workflow Conferencia e `ConferenciaTests` (D-031) |
-| `7c884b5`, `f2b7771` | Sem tela ou sem biblioteca gráfica, `Cli.WhyNoWindow` explica em vez de abortar. Recusa do polkit (127) com mensagem própria |
+| `c8a04cc` | **R14-C.** `DataFolder.Resolve` decide pela trilha de gravações (`DataTrail`, D-032), e não pela data. Empate ou divergência não sobrescreve em silêncio. **R15-A.** O teste de `ubuntu-drivers` exige que o comando funcione. A Conferencia leva e traz desfazer em pen drive real. Versão 1.1.3 |
+| este | Resposta no relatório, D-032, NOVIDADES, README, LINUX, ARQUITETURA e `colab/` |
 
 ## Como verificar
 
 - **Windows:** `dotnet build InfoPC.csproj -c Release -nologo --no-incremental` → 0 erros, 16 avisos (linha de base).
-- **Linux, rodando no Windows:** `dotnet test linux/tests/InfoPC.Tests/InfoPC.Tests.csproj -c Release` → 248 passando (eram 237).
-- **[Conferencia, run 41209509537](https://github.com/victorhoura/InfoPC/actions/runs/41209509537)**, em `f2b7771`, verde:
-  - `pkexec` real roda como root; instalar `cowsay` por ele e desfazer remove o pacote; recusa do polkit dá a mensagem certa; `ubuntu-drivers` real responde; com hidepid, `InstallerActivity` diz `Unknown`.
-  - FAT32 e exFAT: dados no pen drive; montado só para leitura, vão para `~/.local/share/InfoPC`.
-  - Janela vista em GNOME (Wayland com XWayland), KDE em X11 e KDE em Wayland, em máquina virtual. GNOME com `--no-x11`, sem tela e contêiner sem bibliotecas: código 1 e a mensagem, sem core dump.
-  - Pacote arm64 em Debian 12, Fedora 41 e openSUSE Tumbleweed, modo texto.
-- **PC real** (Dell XPS 8940, i5-10400, GTX 1650 SUPER, Windows 11), programa elevado e dirigido por UIAutomation; com o pacote da `v1.1.1` e, nas correções, com o build da 1.1.2:
-  - **As 21 páginas** abriram, com dados coerentes. Sem clique: 0 conexões externas e 0 de 11 itens do sistema alterados. No original 0.16, 2 conexões externas sem clique.
-  - **Otimização:** 5 ajustes aplicados mudam 7 itens; RESTAURAR ORIGINAIS deixa 0 diferenças, e os interruptores acompanham.
-  - **Inicialização:** desativar, reativar, REMOVER e Restaurar, numa entrada de teste criada e apagada por mim.
-  - **Steam:** aplicar e RESTAURAR ORIGINAL deixam o `localconfig.vdf` igual byte a byte.
-  - **Perfil de jogo:** JOGAR aplica GPU, tela cheia e plano; ao fechar, o plano volta; desmarcado, o próximo JOGAR devolve o registro.
-  - **Maker:** instalar o Arduino, remover e restaurar, com o aviso de segurança do Windows; PÁGINA OFICIAL.
-  - **Outros:** VERIFICAR TUDO trouxe a versão da NVIDIA (610.60 → 621.01); os 6 benchmarks; o corte do stress (limite 82 °C: parou sozinho, pico 89 °C); relatório, overlay e tema.
+- **Linux, rodando no Windows:** `dotnet test linux/tests/InfoPC.Tests/InfoPC.Tests.csproj -c Release` → 257 passando (eram 248).
+- **Trilha desligada** (`Compare` sem ler `Trail`, depois restaurado): 4 testes novos de `DataFolderTests` falham, inclusive o da reprodução do relatório.
+- **[Conferencia, run 41246005320](https://github.com/victorhoura/InfoPC/actions/runs/41246005320)**, em `c8a04cc`, verde: `Pen_drive_de_verdade_leva_e_traz_o_desfazer_com_a_data_arredondada` em FAT32 e exFAT reais; `ubuntu-drivers devices` com sucesso; os demais jobs como antes.
 - **Não verificado (honestidade):**
-  - **FPS com chave:** não há chave da HowManyFPS.
-  - **Não clicado de propósito, para não alterar este PC:** instalar driver NVIDIA, Windows Update, OTIMIZAR (fecha programas), APLICAR do Overclock, Instalar apps, remover dispositivos e liberar números COM. Stress test longo também não, porque a CPU chega a 100 °C aqui.
-  - **Sem hardware aqui:** Integração RGB e placas Arduino conectadas.
-  - **Linux em PC físico:** sensores, S.M.A.R.T. e GPU de verdade. Janela de senha do polkit fechada pelo usuário (126) só está simulada, porque exige um agente de verdade.
-  - **Termos das licenças:** o texto da Silicon Labs lido é uma cópia antiga. Não é parecer jurídico.
+  - **Linux em PC físico:** sensores, S.M.A.R.T. e GPU de verdade. Janela de senha do polkit fechada pelo usuário (126) só está simulada.
+  - **FPS com chave:** não há chave da HowManyFPS. **Sem hardware aqui:** Integração RGB e placas Arduino conectadas.
+  - **Não clicado de propósito no PC real:** instalar driver NVIDIA, Windows Update, OTIMIZAR, APLICAR do Overclock, Instalar apps, remover dispositivos e liberar números COM, stress longo. A CPU chega a 100 °C aqui.
+  - **Termos das licenças:** texto da Silicon Labs de uma cópia antiga; lista de distribuíveis do DXIL não localizada. Não é parecer jurídico.
 
 ## Riscos e onde olhar com mais atenção
 
-- **Efeitos de teste, já desfeitos no PC real:** entrada no Run, opção da Steam, certificado da Arduino em TrustedPublisher (o aviso do Windows o adicionou), drivers Arduino e valores do jogo de teste. Conferi cada um depois, mas o usuário não acompanhou.
-- **`Vdf.Esc`:** deixou de escapar tabulação e quebra de linha. `Parse` continua lendo `\t` e `\n`; um arquivo que os traga escapados volta com o caractere puro. O formato da Steam aceita os dois, mas confira.
-- **`Cli.WhyNoWindow`:** o filtro do `catch` só pega `XOpenDisplay` e `DllNotFoundException`, em qualquer nível de `InnerException`. Veja se não esconde outro erro.
-- **`THIRD-PARTY-NOTICES.txt` e o DirectX Shader Compiler:** vêm da entrega anterior. Veja `docs/UPSTREAM.md`, seção 7.
+- **`DataFolder.Compare` e o fluxo de `Resolve`:** a ordem das candidatas (pasta em uso primeiro) decide os empates. Veja a escolha com três cópias, inclusive a pasta `dados` antiga.
+- **`SetAside`:** move a cópia não escolhida para `.anterior`. A pasta `dados` antiga nunca é movida, porque contém as pastas de identidade; divergência com ela repete o aviso a cada abertura enquanto ela existir.
+- **Limites aceitos:** entre duas cópias de versões anteriores ainda vale a data (com tolerância de 2 s); passar de 256 gravações sem sincronizar conta como divergência, com aviso; voltar a uma versão anterior e gravar lá faz essa cópia perder para a que tem trilha.
 - **Repositório antigo:** `victorhoura/InfoPC-antigo` continua privado, até o usuário liberar a permissão `delete_repo`.
-- **Observação sobre o PC do usuário:** CPU a 92 °C antes do benchmark, 100 °C durante, GPU com hot spot de 95 °C e `PerfCap` térmico. É do PC, não do programa.

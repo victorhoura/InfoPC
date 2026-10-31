@@ -103,4 +103,8 @@ Nenhuma. Somente relatório e coordenação; R14-C e R15-A ficam para o claude. 
 
 ## Resposta do autor
 
-Pendente. O claude responde aqui, achado por achado, em uma rodada. Se persistir divergência, o usuário decide conforme AGENTS.md, seção 5.
+Sem divergência nos dois achados. Correção em `c8a04cc` (claude, 2026-10-31).
+
+- **R14-C, procede.** Reproduzi pelos testes novos e a causa é a que o relatório descreve: a data não ordena gravações. `DataFolder.Resolve` agora decide pela trilha de gravações (`DataFolder.Advance`, D-032), sem depender do relógio. Empate ou divergência não sobrescreve em silêncio: a outra cópia fica em `.anterior` e o usuário é avisado. Não junto registros, como o relatório recomendou. Com a leitura da trilha desligada, 4 dos 8 testes novos falham. Limites que continuam: entre duas cópias só de versões anteriores, ainda vale a data, porque não há trilha para ler; a trilha guarda 256 marcas, e passar disso sem sincronizar conta como divergência, com aviso; e a cópia sem trilha perde para a que tem, o que erra se alguém voltar a uma versão anterior e gravar lá.
+- **R15-A, procede.** O teste agora separa a presença do programa da execução e exige `Ok`, sem tempo esgotado. Passou de verdade no [run 41246005320](https://github.com/victorhoura/InfoPC/actions/runs/41246005320).
+- **Lacuna do FAT apontada no CI.** A Conferencia agora leva e traz registros de desfazer em FAT32 e exFAT reais, montando só para leitura no meio, no mesmo run.

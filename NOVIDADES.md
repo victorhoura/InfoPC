@@ -1,3 +1,9 @@
+## Novidades da v1.1.3
+
+**Dados e desfazer, nas duas edições**
+- Ao trocar entre a pasta do programa e a pasta do usuário, o programa sabe qual cópia dos dados veio depois sem depender da data do arquivo, que num pen drive FAT tem precisão de 2 segundos. Assim, registros de desfazer não somem da tela.
+- Se duas cópias tiverem alterações diferentes, nenhuma é sobrescrita em silêncio: o programa avisa e guarda a outra.
+
 ## Novidades da v1.1.2
 
 Correções de defeitos achados usando o programa de verdade:

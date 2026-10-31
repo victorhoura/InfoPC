@@ -28,7 +28,7 @@ App WPF de uma janela (`MainWindow`) com menu lateral por categorias. Cada área
 |-----------------|---------|-----------|
 | Publicar        | Actions, workflow **Publicar**, ou `gh workflow run publicar.yml -f versao=<versão> -f publicar=true` | gera, abre e testa os pacotes das duas edições e publica a Release (D-029). Com `publicar=false`, deixa um rascunho com as telas |
 | Conferência     | Actions, workflow **Conferencia** (`.github/workflows/conferencia.yml`), só manual | em Linux de verdade: `pkexec` e polkit, instalar e desfazer pacote, `ubuntu-drivers`, hidepid, pen drive FAT32 e exFAT, janela em GNOME e KDE, sem tela, e arm64 em outras distribuições |
-| Testes          | `dotnet test linux/tests/InfoPC.Tests/InfoPC.Tests.csproj -c Release` | 248 testes passando no Windows (cultura pt-BR) em 2026-10-31; o CI cobre Ubuntu 22.04 e 24.04, e o fluxo real de pacotes e grupos em cinco distribuições |
+| Testes          | `dotnet test linux/tests/InfoPC.Tests/InfoPC.Tests.csproj -c Release` | 257 testes passando no Windows (cultura pt-BR) em 2026-10-31; o CI cobre Ubuntu 22.04 e 24.04, e o fluxo real de pacotes e grupos em cinco distribuições |
 | Executar        | `dotnet run --project linux/src/InfoPC.Linux` (janela) ou `... -- --info` (modo texto) | a janela só foi desenhada sem tela (testes); o modo texto roda no CI |
 | Binário único   | `dotnet publish linux/src/InfoPC.Linux/InfoPC.Linux.csproj -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=None -o out` | `out/InfoPC` |
 | Instalar/remover| `bash linux/instalar.sh` / `bash linux/desinstalar.sh` | testado no CI em Debian 12, Ubuntu 24.04, Fedora 41, Arch e openSUSE |
