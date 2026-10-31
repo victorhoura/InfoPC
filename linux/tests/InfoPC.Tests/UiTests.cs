@@ -1,0 +1,228 @@
+using Avalonia.Controls;
+using Avalonia.Headless;
+using Avalonia.Headless.XUnit;
+using Avalonia.Interactivity;
+using Avalonia.LogicalTree;
+using Avalonia.Threading;
+using InfoPC.Linux;
+using Xunit;
+
+namespace InfoPC.Tests;
+
+/// <summary>
+/// Abre a janela de verdade (render Skia sem tela), percorre todas as páginas do menu e confere que montam e desenham.
+/// Com a variável INFOPC_SHOTS apontando para uma pasta, grava uma captura de cada página (para revisar o layout).
+/// </summary>
+public class UiTests
+{
+    private static void Pump()
+    {
+        Dispatcher.UIThread.RunJobs();
+        AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+        Dispatcher.UIThread.RunJobs();
+    }
+
+    /// <summary>As páginas leem o hardware em segundo plano: dá um tempo e bombeia a fila da tela até elas terminarem.</summary>
+    private static async Task Settle()
+    {
+        for (int i = 0; i < 8; i++) { await Task.Delay(60); Pump(); }
+    }
+
+    private static async Task<MainWindow> OpenAsync()
+    {
+        Services.Current.ResetForTests();
+        var w = new MainWindow();
+        w.Show();
+        await Services.Current.WhenReady;
+        Pump();
+        // duas leituras: carga e consumo só existem a partir da segunda
+        Services.Current.TickNow();
+        await Task.Delay(200);
+        Services.Current.TickNow();
+        Pump();
+        return w;
+    }
+
+    private static string? ShotsDir => Environment.GetEnvironmentVariable("INFOPC_SHOTS") is { Length: > 0 } d ? d : null;
+
+    [AvaloniaTheory]
+    [InlineData("intel-desktop")]
+    [InlineData("amd-laptop")]
+    [InlineData("raspberry")]
+    public async Task Every_page_builds_and_renders(string fixture)
+    {
+        using var fx = Fx.Use(fixture);
+        var w = await OpenAsync();
+        try
+        {
+            Assert.NotEmpty(w.Entries);
+            foreach (var e in w.Entries)
+            {
+                w.Navigate(e.Key);
+                await Settle();
+                var page = w.Page(e.Key);
+                Assert.NotNull(page);
+                Assert.False(string.IsNullOrWhiteSpace(page!.Title), e.Key);
+                Services.Current.TickNow();
+                Pump();
+                var frame = w.CaptureRenderedFrame();
+                Assert.NotNull(frame);
+                Assert.True(frame!.PixelSize.Width >= 900, e.Key);
+                if (ShotsDir is { } dir)
+                {
+                    Directory.CreateDirectory(dir);
+                    frame.Save(Path.Combine(dir, $"{fixture}-{e.Key}.png"));
+                }
+            }
+        }
+        finally
+        {
+            w.Close();
+            Services.Current.ResetForTests();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task Stress_keeps_its_checks_running_while_another_page_is_open()
+    {
+        using var fx = Fx.Use("intel-desktop");
+        string dir = Path.Combine(Path.GetTempPath(), "infopc-cfg-" + Guid.NewGuid().ToString("N"));
+        string old = AppSettings.Folder;
+        AppSettings.Folder = dir;
+        var w = await OpenAsync();
+        Button? btn = null;
+        var running = typeof(StressPage).GetField("_running", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!;
+        try
+        {
+            w.Navigate("stress"); await Settle();
+            var page = (StressPage)w.Page("stress")!;
+            btn = page.GetLogicalDescendants().OfType<Button>().First(b => b.Content as string == "INICIAR");
+            btn.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));          // só a CPU (padrão), 15 min
+            Assert.True((bool)running.GetValue(page)!);
+
+            w.Navigate("sensors"); await Settle();                            // sai da página com a carga ligada
+            typeof(StressPage).GetField("_start", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!
+                .SetValue(page, DateTime.Now.AddHours(-1));                   // os 15 min passam com outra página aberta
+            Services.Current.TickNow();
+            Pump();
+            Assert.False((bool)running.GetValue(page)!);                      // a verificação de tempo agiu e parou a carga
+            Assert.Equal("INICIAR", btn.Content);
+        }
+        finally
+        {
+            if (btn?.Content as string == "PARAR") btn.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            w.Close();
+            Services.Current.ResetForTests();
+            AppSettings.Folder = old;
+            try { Directory.Delete(dir, true); } catch { }
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task Package_undo_is_hidden_while_the_list_is_pending_and_warns_when_it_was_completed_later()
+    {
+        using var fx = Fx.Use("intel-desktop");
+        // a janela carrega e salva as configurações: estes registros não podem ir para os outros testes
+        string oldFolder = AppSettings.Folder, dir = Directory.CreateTempSubdirectory("infopc-cfg").FullName;
+        AppSettings.Folder = dir;
+        var w = await OpenAsync();
+        try
+        {
+            var changes = Services.Current.Settings.PackageChanges;
+            var before = new List<PackageId> { new("bash", "amd64", "1.0") };
+            changes.Add(new PackageChange { Kind = "gpu-driver", What = "driver A", Manager = "apt", Pending = true, Before = before });
+            changes.Add(new PackageChange { Kind = "gpu-driver", What = "driver B", Manager = "apt", Recovered = true, Added = { new("nvidia-driver-550", "amd64", "550.90") } });
+            changes.Add(new PackageChange { Kind = "brltty", What = "brltty", Manager = "apt", Recovered = true, Removed = { new("brltty", "amd64", "6.5") } });
+
+            string[] Texts(string id) => w.Page(id)!.GetLogicalDescendants().OfType<TextBlock>().Select(x => x.Text ?? "").ToArray();
+            int Buttons(string id, string prefix) => w.Page(id)!.GetLogicalDescendants().OfType<Button>().Count(b => b.Content is string c && c.StartsWith(prefix, StringComparison.Ordinal));
+
+            w.Navigate("drivers"); await Settle(); await Settle();
+            Assert.Equal(1, Buttons("drivers", "DESFAZER"));                      // só o que tem a lista final
+            Assert.Contains(Texts("drivers"), x => x.Contains("driver A") && x.Contains("sem a lista final"));
+            Assert.Equal(1, Buttons("drivers", "O INSTALADOR JÁ TERMINOU"));      // a fixture não tem /proc/1: o sistema não deixa ver o instalador
+            Assert.Contains(Texts("drivers"), x => x.Contains("Confira antes de desfazer"));
+            Assert.Contains(Texts("drivers"), x => x.Contains("nvidia-driver-550:amd64 550.90"));
+
+            w.Navigate("serial"); await Settle(); await Settle();
+            Assert.Equal(1, Buttons("serial", "REINSTALAR O BRLTTY"));
+            Assert.Contains(Texts("serial"), x => x.Contains("Confira antes de reinstalar") && x.Contains("brltty:amd64 6.5"));
+
+            changes[2].Pending = true; changes[2].Before = before;
+            w.Navigate("sensors"); await Settle();
+            w.Navigate("serial"); await Settle(); await Settle();
+            Assert.Equal(0, Buttons("serial", "REINSTALAR O BRLTTY"));
+            Assert.Contains(Texts("serial"), x => x.Contains("ainda não tem a lista final"));
+            Assert.Equal(1, Buttons("serial", "O INSTALADOR JÁ TERMINOU"));
+        }
+        finally
+        {
+            w.Close();
+            Services.Current.ResetForTests();
+            AppSettings.Folder = oldFolder;
+            try { Directory.Delete(dir, true); } catch (IOException) { }
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task Overlay_keeps_updating_while_another_page_is_open()
+    {
+        using var fx = Fx.Use("intel-desktop");
+        var w = await OpenAsync();
+        var tick = typeof(Services).GetField("Tick", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!;
+        bool Subscribed(object page) => (tick.GetValue(Services.Current) as Delegate)?.GetInvocationList().Any(d => d.Target == page) == true;
+        OverlayWindow? overlay = null;
+        try
+        {
+            w.Navigate("overlay"); await Settle();
+            var page = (OverlayPage)w.Page("overlay")!;
+            Assert.False(Subscribed(page));                                       // sem overlay aberto, nada a atualizar
+            overlay = new OverlayWindow();
+            page.Attach(overlay);
+            overlay.Show();
+            Assert.True(Subscribed(page));
+
+            w.Navigate("sensors"); await Settle();                                // antes, sair da página desligava a atualização
+            Assert.True(Subscribed(page));
+
+            overlay.Close(); overlay = null; Pump();
+            Assert.False(Subscribed(page));                                       // fechar o overlay desliga
+        }
+        finally
+        {
+            overlay?.Close();
+            w.Close();
+            Services.Current.ResetForTests();
+        }
+    }
+
+    [AvaloniaFact]
+    public void Device_toast_renders_and_replaces_the_previous_one()
+    {
+        ToastWindow.Show(new DeviceChange(true, DeviceChangeKind.Storage, "Kingston DataTraveler 3.0", "/dev/sdb · 32 GB"));
+        ToastWindow.Show(new DeviceChange(false, DeviceChangeKind.Maker, "USB Serial", "wch.cn · VID 1A86 PID 7523"));
+        Pump();
+        var w = Avalonia.Application.Current!.ApplicationLifetime is null ? null : (Avalonia.Controls.Window?)null;
+        Assert.Null(w);   // só confirma que as duas chamadas não lançaram; a janela some sozinha
+    }
+
+    [AvaloniaFact]
+    public async Task Theme_toggle_switches_variant_and_keeps_pages_working()
+    {
+        using var fx = Fx.Use("intel-desktop");
+        var w = await OpenAsync();
+        try
+        {
+            var app = Avalonia.Application.Current!;
+            Assert.Equal(Avalonia.Styling.ThemeVariant.Dark, app.RequestedThemeVariant);
+            Services.ApplyTheme(true);
+            Pump();
+            Assert.Equal(Avalonia.Styling.ThemeVariant.Light, app.RequestedThemeVariant);
+            w.Navigate("sensors"); await Settle();
+            var frame = w.CaptureRenderedFrame();
+            Assert.NotNull(frame);
+            if (ShotsDir is { } dir) { Directory.CreateDirectory(dir); frame!.Save(Path.Combine(dir, "intel-desktop-sensors-claro.png")); }
+        }
+        finally { Services.ApplyTheme(false); w.Close(); Services.Current.ResetForTests(); }
+    }
+}

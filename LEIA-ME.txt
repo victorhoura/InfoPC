@@ -1,0 +1,36 @@
+InfoPC 1.1
+==========
+
+Ferramenta portátil de diagnóstico e ajuste do PC: informações do sistema, sensores, placa de vídeo,
+FPS estimado em jogos, detector de gargalo, overlay de FPS, benchmarks (CPU, GPU, memória e disco),
+otimização (limpeza de memória e ajustes para jogos) e stress test de CPU / RAM / GPU.
+
+REQUISITOS
+- Windows 10 ou 11, 64 bits. Não precisa instalar o .NET (já vem dentro do .exe).
+- Para temperatura e consumo da CPU, instale o driver PawnIO (uma vez só):
+      winget install namazso.PawnIO
+- Aceite o pedido de administrador ao abrir (necessário para ler os sensores).
+- Se a temperatura/consumo da CPU não aparecerem, o menu lateral mostra o motivo e um
+  botão CORRIGIR, que instala o PawnIO com um clique. Depois feche e abra o programa.
+  Se instalou o PawnIO e mesmo assim não aparecer, reinicie o PC.
+
+COMO USAR
+- Abra o InfoPC.exe. Não tem instalador. Na primeira vez ele demora alguns segundos para iniciar.
+- Se o Windows mostrar "O Windows protegeu o computador", clique em "Mais informações"
+  e depois em "Executar assim mesmo" (o programa não tem assinatura digital paga).
+- Overlay: Ctrl + Shift + O liga e desliga.
+
+OBSERVAÇÕES
+- Placas NVIDIA mostram mais detalhes (VBIOS, limites de energia, CUDA).
+- Configurações e histórico ficam na pasta "dados", ao lado do .exe, numa subpasta para cada PC e usuário.
+  Levar o programa para outro PC começa do zero lá, e os dados deste PC continuam guardados. Sem poder gravar
+  na pasta do .exe, ficam em %AppData%\InfoPC. Dados de versões anteriores são copiados de lá na primeira vez.
+- Use os stress tests com o limite de temperatura ligado e boa ventilação.
+
+CRÉDITOS E LICENÇA
+- InfoPC é baseado no RESET EXPLODE, de Gustavo (GustavoReset), licença MIT.
+  O texto da licença está no arquivo LICENSE.txt, junto com o .exe.
+- Código-fonte: https://github.com/victorhoura/InfoPC
+- Bibliotecas de terceiros e seus termos: THIRD-PARTY-NOTICES.txt, junto com o .exe.
+- O driver Arduino embutido é GPL, da Arduino LLC. Os drivers CH340, CP210x e FTDI não vêm junto:
+  a aba Maker aponta para a página de cada fabricante.

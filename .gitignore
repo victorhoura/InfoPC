@@ -1,0 +1,38 @@
+# Build (do projeto original)
+bin/
+obj/
+publish/
+InfoPC-dist/
+*.exe
+*.dll
+*.pdb
+
+# Pacote portatil gerado
+/dist/
+
+# IDE
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+
+# Local
+*.log
+
+# Windows
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Dados locais dos agentes (nao versionar)
+.claude/data/
+.claude/settings.local.json
+
+# Fixtures dos testes da edicao Linux: arquivos falsos com nome de binario ou pasta de build
+!/linux/tests/InfoPC.Tests/Fixtures/**/bin/
+!/linux/tests/InfoPC.Tests/Fixtures/**/*.exe
+
+# Drivers seriais embutidos (Maker): as DLLs fazem parte dos pacotes assinados
+# (precisa ficar por ultimo para valer sobre *.dll e *.exe)
+!Drivers/**

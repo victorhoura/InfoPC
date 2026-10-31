@@ -1,0 +1,19 @@
+"libraryfolders"
+{
+	"0"
+	{
+		"path"		"/home/tester/.local/share/Steam"
+		"apps"
+		{
+			"730"		"35000000000"
+		}
+	}
+	"1"
+	{
+		"path"		"/mnt/jogos/SteamLibrary"
+		"apps"
+		{
+			"440"		"1000"
+		}
+	}
+}

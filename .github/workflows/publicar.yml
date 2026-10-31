@@ -1,0 +1,211 @@
+name: Publicar
+
+# So roda na mao (D-029): gera os pacotes em maquinas limpas, abre os programas de verdade e so entao publica a Release.
+# Nunca dispara sozinho, e a Release herda a visibilidade do repositorio.
+# Os arquivos passam por um rascunho de Release, que nao usa a cota de artefatos do Actions.
+on:
+  workflow_dispatch:
+    inputs:
+      versao:
+        description: "Versao, igual a dos .csproj (ex.: 1.1.0)"
+        required: true
+      publicar:
+        description: "Publicar no fim (desligado: deixa um rascunho conferencia-<run> para olhar as telas)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: 1
+  DOTNET_NOLOGO: 1
+  VERSAO: ${{ inputs.versao }}
+  GH_TOKEN: ${{ github.token }}
+  RASCUNHO: ${{ inputs.publicar && format('v{0}', inputs.versao) || format('conferencia-{0}', github.run_id) }}
+
+jobs:
+  rascunho:
+    name: Criar o rascunho
+    runs-on: ubuntu-latest
+    steps:
+      - name: Criar
+        run: gh release create "$RASCUNHO" --repo "$GITHUB_REPOSITORY" --draft --target "$GITHUB_SHA" --title "InfoPC $VERSAO" --notes "Em preparo."
+
+  windows:
+    name: Windows x64
+    needs: rascunho
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Gerar o pacote
+        shell: pwsh
+        run: |
+          dotnet publish InfoPC.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=None -o publicado -nologo
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $v = (Get-Item publicado\InfoPC.exe).VersionInfo.ProductVersion
+          if (-not $v.StartsWith($env:VERSAO)) { throw "Versao do exe ($v) diferente de $env:VERSAO" }
+          New-Item -ItemType Directory InfoPC | Out-Null
+          Copy-Item publicado\InfoPC.exe InfoPC\
+          Copy-Item LEIA-ME.txt InfoPC\
+          Copy-Item LICENSE InfoPC\LICENSE.txt
+          Copy-Item THIRD-PARTY-NOTICES.txt InfoPC\
+          Compress-Archive -Path InfoPC -DestinationPath "InfoPC-$env:VERSAO-windows-x64.zip"
+
+      - name: Abrir o programa de verdade (o runner nao tem UAC)
+        shell: pwsh
+        run: |
+          # dados de uma versao anterior: precisam aparecer na pasta nova, e a origem precisa ficar
+          $old = Join-Path $env:APPDATA 'InfoPC'
+          New-Item -ItemType Directory -Force "$old\Startup" | Out-Null
+          '{"LightTheme":true}' | Set-Content "$old\settings.json"
+          'atalho' | Set-Content "$old\Startup\antigo.lnk"
+
+          # em outra pasta: o pacote ja gerado nao pode ganhar uma pasta dados
+          Expand-Archive "InfoPC-$env:VERSAO-windows-x64.zip" teste
+          $p = Start-Process teste\InfoPC\InfoPC.exe -PassThru
+          Start-Sleep -Seconds 40
+          if ($p.HasExited) { throw "O programa fechou sozinho, codigo $($p.ExitCode)" }
+          $p.Refresh()
+          "Janela: '$($p.MainWindowTitle)'  memoria: $([int]($p.WorkingSet64 / 1MB)) MB"
+          if ($p.MainWindowTitle -ne 'InfoPC') { throw "Janela principal nao apareceu" }
+
+          try {
+            Add-Type -AssemblyName System.Windows.Forms, System.Drawing
+            $b = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
+            $img = New-Object System.Drawing.Bitmap $b.Width, $b.Height
+            [System.Drawing.Graphics]::FromImage($img).CopyFromScreen($b.Location, [System.Drawing.Point]::Empty, $b.Size)
+            $img.Save("$PWD\tela-windows.png")
+          } catch { "Sem captura de tela: $_" }
+
+          Stop-Process -Id $p.Id -Force
+          Start-Sleep -Seconds 3
+
+          $d = @(Get-ChildItem teste\InfoPC\dados -Directory)
+          if ($d.Count -ne 1) { throw "Esperava uma pasta em dados, achei $($d.Count)" }
+          "Pasta de dados: $($d[0].FullName)"
+          if ($d[0].Name -notmatch '^[0-9a-f]{16}$') { throw "Nome inesperado: $($d[0].Name)" }
+          if (-not (Select-String -Quiet LightTheme "$($d[0].FullName)\settings.json")) { throw "settings.json nao veio" }
+          if (-not (Test-Path "$($d[0].FullName)\Startup\antigo.lnk")) { throw "O backup da Inicializacao nao veio" }
+          if (-not (Test-Path "$old\settings.json")) { throw "A origem foi apagada" }
+          icacls $d[0].FullName
+
+      - name: Enviar para o rascunho
+        shell: pwsh
+        run: |
+          gh release upload $env:RASCUNHO "InfoPC-$env:VERSAO-windows-x64.zip" --repo $env:GITHUB_REPOSITORY
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          if (Test-Path tela-windows.png) { gh release upload $env:RASCUNHO tela-windows.png --repo $env:GITHUB_REPOSITORY }
+
+  linux:
+    name: Linux ${{ matrix.arq }}
+    needs: rascunho
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { arq: x64,   rid: linux-x64,   runner: ubuntu-22.04 }
+          - { arq: arm64, rid: linux-arm64, runner: ubuntu-24.04-arm }
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Gerar o pacote
+        run: |
+          dotnet publish linux/src/InfoPC.Linux/InfoPC.Linux.csproj -c Release -r ${{ matrix.rid }} --self-contained true \
+            -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=None -o publicado
+          mkdir InfoPC
+          install -m 755 publicado/InfoPC InfoPC/InfoPC
+          install -m 644 linux/LEIA-ME.txt InfoPC/LEIA-ME.txt
+          install -m 644 LICENSE InfoPC/LICENSE.txt
+          install -m 644 THIRD-PARTY-NOTICES.txt InfoPC/THIRD-PARTY-NOTICES.txt
+          tar czf "InfoPC-$VERSAO-${{ matrix.rid }}.tar.gz" InfoPC
+
+      - name: Abrir o programa de verdade, numa tela virtual
+        run: |
+          mkdir teste && tar xzf "InfoPC-$VERSAO-${{ matrix.rid }}.tar.gz" -C teste
+          cd teste/InfoPC
+          test "$(./InfoPC --versao)" = "$VERSAO"
+          ./InfoPC --diagnostico
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq xvfb xauth imagemagick libice6 libsm6 libx11-6 fontconfig > /dev/null
+          xvfb-run -a -s "-screen 0 1280x800x24" sh -c '
+            ./InfoPC & p=$!
+            sleep 25
+            kill -0 "$p" || { echo "O programa fechou sozinho"; exit 1; }
+            import -window root "$GITHUB_WORKSPACE/tela-linux-${{ matrix.arq }}.png"
+            kill "$p"
+          '
+
+      - name: O pacote pronto em cada distribuicao (D-017)
+        if: matrix.arq == 'x64'
+        run: |
+          pacote="$PWD/InfoPC-$VERSAO-linux-x64.tar.gz"
+          for imagem in debian:12 ubuntu:24.04 fedora:41 archlinux:latest opensuse/tumbleweed:latest; do
+            echo "::group::$imagem"
+            docker run --rm -e VERSAO -v "$pacote:/pacote.tar.gz:ro" "$imagem" sh -c '
+              set -ex
+              if command -v dnf > /dev/null; then dnf install -y -q tar gzip
+              elif command -v zypper > /dev/null; then zypper --non-interactive install tar gzip libopenssl3 libstdc++6
+              elif command -v pacman > /dev/null; then pacman -Sy --noconfirm --needed tar gzip
+              fi
+              tar xzf /pacote.tar.gz -C /tmp
+              cd /tmp/InfoPC
+              test -x InfoPC
+              test "$(./InfoPC --versao)" = "$VERSAO"
+              ./InfoPC --diagnostico
+              ./InfoPC --info | head -20
+              ./InfoPC --json > /tmp/relatorio.json
+              test -s /tmp/relatorio.json
+            '
+            echo "::endgroup::"
+          done
+
+      - name: Enviar para o rascunho
+        run: |
+          gh release upload "$RASCUNHO" "InfoPC-$VERSAO-${{ matrix.rid }}.tar.gz" --repo "$GITHUB_REPOSITORY"
+          if [ -f "tela-linux-${{ matrix.arq }}.png" ]; then gh release upload "$RASCUNHO" "tela-linux-${{ matrix.arq }}.png" --repo "$GITHUB_REPOSITORY"; fi
+
+  release:
+    name: Publicar a Release
+    if: inputs.publicar && github.ref == 'refs/heads/main'
+    needs: [windows, linux]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Publicar
+        run: |
+          for tela in $(gh release view "$RASCUNHO" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name | select(startswith("tela-"))'); do
+            gh release delete-asset "$RASCUNHO" "$tela" --repo "$GITHUB_REPOSITORY" --yes
+          done
+          gh release download "$RASCUNHO" --repo "$GITHUB_REPOSITORY" --pattern 'InfoPC-*' --dir pacotes
+          (cd pacotes && sha256sum InfoPC-* > SHA256SUMS.txt)
+          gh release upload "$RASCUNHO" pacotes/SHA256SUMS.txt --repo "$GITHUB_REPOSITORY"
+          {
+            echo "> **Pré-lançamento.** Os programas abriram em máquinas limpas do CI, mas falta o teste manual em um PC de verdade."
+            echo
+            echo "Windows: baixe o \`.zip\`, extraia e abra o \`InfoPC.exe\` (pede administrador)."
+            echo
+            echo "Linux, no terminal:"
+            echo
+            echo '```'
+            echo "curl -fsSL https://github.com/$GITHUB_REPOSITORY/releases/download/v$VERSAO/InfoPC-$VERSAO-linux-x64.tar.gz | tar xz && ./InfoPC/InfoPC"
+            echo '```'
+            echo
+            echo "Em arm64, troque \`linux-x64\` por \`linux-arm64\`. Os dados ficam na pasta \`dados\`, ao lado do programa."
+            echo
+            cat NOVIDADES.md
+          } > notas.md
+          gh release edit "$RASCUNHO" --repo "$GITHUB_REPOSITORY" --draft=false --prerelease --notes-file notas.md

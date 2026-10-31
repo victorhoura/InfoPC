@@ -1,0 +1,111 @@
+name: Linux - instalador
+
+# Roda o linux/instalar.sh em varias distribuicoes (contêineres), como um usuario comum com sudo, e confere o resultado.
+# So dispara quando o instalador muda (ou na mao): cada distribuicao baixa o SDK do .NET e compila o programa.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'linux/instalar.sh'
+      - 'linux/desinstalar.sh'
+      - '.github/workflows/linux-instalador.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  instalar:
+    name: ${{ matrix.nome }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    container:
+      image: ${{ matrix.image }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { nome: "Debian 12",         image: "debian:12",                pm: apt }
+          - { nome: "Ubuntu 24.04",      image: "ubuntu:24.04",             pm: apt }
+          - { nome: "Fedora 41",         image: "fedora:41",                pm: dnf }
+          - { nome: "Arch Linux",        image: "archlinux:latest",         pm: pacman }
+          - { nome: "openSUSE Tumbleweed", image: "opensuse/tumbleweed:latest", pm: zypper }
+    steps:
+      - name: "Preparar o contêiner (sudo, git e um usuario comum)"
+        shell: sh
+        run: |
+          case "${{ matrix.pm }}" in
+            apt)    apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install -y -qq sudo git ca-certificates ;;
+            dnf)    dnf install -y -q sudo git shadow-utils util-linux ;;
+            pacman) pacman -Sy --noconfirm --needed sudo git ;;
+            zypper) zypper --non-interactive install -y sudo git shadow util-linux ;;
+          esac
+          useradd -m -s /bin/bash tester
+          echo 'tester ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/tester
+          chmod 440 /etc/sudoers.d/tester
+
+      - uses: actions/checkout@v4
+
+      - name: Dar o repositorio ao usuario comum
+        shell: sh
+        run: chown -R tester:tester "$GITHUB_WORKSPACE"
+
+      - name: Instalar (como usuario comum, sem perguntas)
+        shell: sh
+        run: su -l tester -s /bin/bash -c "cd '$GITHUB_WORKSPACE' && bash linux/instalar.sh --yes"
+
+      - name: Conferir a instalacao
+        shell: sh
+        run: |
+          su -l tester -s /bin/bash -c '
+            set -ex
+            export PATH="$HOME/.local/bin:$PATH"
+            test -x "$HOME/.local/opt/InfoPC/InfoPC"
+            test -f "$HOME/.local/opt/InfoPC/.instalado-pelo-infopc"
+            test -L "$HOME/.local/bin/infopc"
+            test -f "$HOME/.local/share/applications/infopc.desktop"
+            infopc --versao
+            infopc --diagnostico
+            infopc --info | head -40
+            infopc --json > /tmp/relatorio.json
+            python3 -c "import json;json.load(open(\"/tmp/relatorio.json\"))" || true
+          '
+
+      - name: Desinstalar (mantem dados/ ate o --tudo) e recusar pasta alheia
+        shell: sh
+        run: |
+          su -l tester -s /bin/bash -c '
+            set -ex
+            mkdir -p "$HOME/.local/opt/InfoPC/dados" && echo teste > "$HOME/.local/opt/InfoPC/dados/marca.txt"
+            bash "'"$GITHUB_WORKSPACE"'/linux/desinstalar.sh"
+            test ! -e "$HOME/.local/bin/infopc"
+            test ! -e "$HOME/.local/share/applications/infopc.desktop"
+            test ! -e "$HOME/.local/opt/InfoPC/InfoPC"
+            test -f "$HOME/.local/opt/InfoPC/dados/marca.txt"          # dados do usuario ficam
+            test -f "$HOME/.local/opt/InfoPC/.instalado-pelo-infopc"   # e a marca, para o --tudo reconhecer a pasta
+            bash "'"$GITHUB_WORKSPACE"'/linux/desinstalar.sh" --tudo
+            test ! -e "$HOME/.local/opt/InfoPC"
+            mkdir -p "$HOME/outro" && echo x > "$HOME/outro/arquivo.txt"
+            if bash "'"$GITHUB_WORKSPACE"'/linux/desinstalar.sh" --prefix "$HOME/outro" --tudo; then exit 1; fi
+            test -f "$HOME/outro/arquivo.txt"                          # pasta que nao e do InfoPC fica intacta
+            mkdir -p "$HOME/oculto" && echo x > "$HOME/oculto/..keep"
+            if bash "'"$GITHUB_WORKSPACE"'/linux/desinstalar.sh" --prefix "$HOME/oculto" --tudo; then exit 1; fi
+            test -f "$HOME/oculto/..keep"                              # nome oculto que comeca com ".." tambem conta
+            mkdir -p "$HOME/sem-infopc/dados" && echo x > "$HOME/sem-infopc/dados/meu.txt"
+            if bash "'"$GITHUB_WORKSPACE"'/linux/desinstalar.sh" --prefix "$HOME/sem-infopc" --tudo; then exit 1; fi
+            test -f "$HOME/sem-infopc/dados/meu.txt"                   # pasta que nunca teve o InfoPC fica intacta
+          '
+
+  arm64-compila:
+    name: Compilacao linux-arm64
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Publicar para arm64 (so confere que compila)
+        run: >
+          dotnet publish linux/src/InfoPC.Linux/InfoPC.Linux.csproj -c Release -r linux-arm64 --self-contained true
+          -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=None -o out-arm64
+      - run: ls -la out-arm64/InfoPC

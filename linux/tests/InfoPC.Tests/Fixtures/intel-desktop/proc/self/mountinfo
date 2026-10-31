@@ -1,0 +1,8 @@
+22 1 259:2 / / rw,relatime shared:1 - ext4 /dev/nvme0n1p2 rw,errors=remount-ro
+23 22 0:21 / /sys rw,nosuid,nodev,noexec,relatime shared:2 - sysfs sysfs rw
+24 22 0:5 / /proc rw,nosuid,nodev,noexec,relatime shared:3 - proc proc rw
+30 22 259:1 / /boot/efi rw,relatime shared:10 - vfat /dev/nvme0n1p1 rw,fmask=0077
+31 22 8:1 / /mnt/Dados\040Grandes rw,relatime shared:11 - ext4 /dev/sda1 rw
+32 22 0:44 / /snap/core22/1380 ro,nodev,relatime shared:12 - squashfs /dev/loop0 ro
+33 22 0:30 / /run/user/1000 rw,nosuid,nodev,relatime shared:13 - tmpfs tmpfs rw
+34 22 259:2 /home /home rw,relatime shared:14 - ext4 /dev/nvme0n1p2 rw,errors=remount-ro

@@ -1,0 +1,73 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="InfoPC.Linux.App"
+             RequestedThemeVariant="Dark">
+
+    <Application.Styles>
+        <FluentTheme>
+            <FluentTheme.Palettes>
+                <ColorPaletteResources x:Key="Dark" Accent="#F5F5F5" RegionColor="#000000" ErrorText="#FF6B6B" />
+                <ColorPaletteResources x:Key="Light" Accent="#111111" RegionColor="#FFFFFF" ErrorText="#C62828" />
+            </FluentTheme.Palettes>
+        </FluentTheme>
+        <StyleInclude Source="avares://InfoPC/Styles.axaml" />
+    </Application.Styles>
+
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.ThemeDictionaries>
+                <!-- Paleta monocromática do InfoPC (a mesma do Theme.xaml da edição Windows) -->
+                <ResourceDictionary x:Key="Dark">
+                    <SolidColorBrush x:Key="Bg" Color="#000000" />
+                    <SolidColorBrush x:Key="Panel" Color="#080808" />
+                    <SolidColorBrush x:Key="Card" Color="#0E0E0E" />
+                    <SolidColorBrush x:Key="Hover" Color="#181818" />
+                    <SolidColorBrush x:Key="Line" Color="#1F1F1F" />
+                    <SolidColorBrush x:Key="LineStrong" Color="#3A3A3A" />
+                    <SolidColorBrush x:Key="Fg" Color="#F5F5F5" />
+                    <SolidColorBrush x:Key="Muted" Color="#8C8C8C" />
+                    <SolidColorBrush x:Key="Faint" Color="#4A4A4A" />
+                    <SolidColorBrush x:Key="Ink" Color="#000000" />
+                    <SolidColorBrush x:Key="Warn" Color="#E5A94B" />
+                    <SolidColorBrush x:Key="Bad" Color="#FF6B6B" />
+                    <SolidColorBrush x:Key="Good" Color="#6BCB8B" />
+                    <!-- Texto/glifos sobre o destaque (que aqui é branco): o Fluent usaria branco e o "check" sumiria -->
+                    <SolidColorBrush x:Key="TextOnAccentFillColorPrimaryBrush" Color="#000000" />
+                    <SolidColorBrush x:Key="TextOnAccentFillColorSecondaryBrush" Color="#222222" />
+                    <SolidColorBrush x:Key="TextOnAccentFillColorDisabledBrush" Color="#888888" />
+                    <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundChecked" Color="#000000" />
+                    <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundCheckedPointerOver" Color="#000000" />
+                    <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundCheckedPressed" Color="#000000" />
+                    <SolidColorBrush x:Key="ToggleSwitchKnobFillOn" Color="#000000" />
+                    <SolidColorBrush x:Key="ToggleSwitchKnobFillOnPointerOver" Color="#000000" />
+                    <SolidColorBrush x:Key="ToggleSwitchKnobFillOnPressed" Color="#000000" />
+                </ResourceDictionary>
+                <ResourceDictionary x:Key="Light">
+                    <SolidColorBrush x:Key="Bg" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="Panel" Color="#F2F2F2" />
+                    <SolidColorBrush x:Key="Card" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="Hover" Color="#E4E4E4" />
+                    <SolidColorBrush x:Key="Line" Color="#CFCFCF" />
+                    <SolidColorBrush x:Key="LineStrong" Color="#8A8A8A" />
+                    <SolidColorBrush x:Key="Fg" Color="#111111" />
+                    <SolidColorBrush x:Key="Muted" Color="#3F3F3F" />
+                    <SolidColorBrush x:Key="Faint" Color="#5C5C5C" />
+                    <SolidColorBrush x:Key="Ink" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="Warn" Color="#9A6200" />
+                    <SolidColorBrush x:Key="Bad" Color="#C62828" />
+                    <SolidColorBrush x:Key="Good" Color="#1B7F3F" />
+                    <SolidColorBrush x:Key="TextOnAccentFillColorPrimaryBrush" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="TextOnAccentFillColorSecondaryBrush" Color="#EEEEEE" />
+                    <SolidColorBrush x:Key="TextOnAccentFillColorDisabledBrush" Color="#CCCCCC" />
+                    <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundChecked" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundCheckedPointerOver" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundCheckedPressed" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="ToggleSwitchKnobFillOn" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="ToggleSwitchKnobFillOnPointerOver" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="ToggleSwitchKnobFillOnPressed" Color="#FFFFFF" />
+                </ResourceDictionary>
+            </ResourceDictionary.ThemeDictionaries>
+            <FontFamily x:Key="Mono">DejaVu Sans Mono, Liberation Mono, Noto Sans Mono, Cascadia Mono, monospace</FontFamily>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

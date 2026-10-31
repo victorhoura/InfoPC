@@ -1,0 +1,10 @@
+# fake pci.ids for tests
+10de  NVIDIA Corporation
+	2786  AD104 [GeForce RTX 4070]
+		1043 8929  TUF Gaming RTX 4070
+1002  Advanced Micro Devices, Inc. [AMD/ATI]
+	15bf  Phoenix1
+	7480  Navi 33 [Radeon RX 7600/7600 XT/7600M XT/7600S/7700S / PRO W7600]
+8086  Intel Corporation
+	4690  AlderLake-S GT1 [UHD Graphics 770]
+C 00  Unclassified device

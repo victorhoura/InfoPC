@@ -1,0 +1,123 @@
+name: Linux
+
+# Verificacao da edicao Linux em Linux de verdade (D-022). Nao publica nada nem cria releases.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'linux/**'
+      - '.github/workflows/linux.yml'
+      # arquivos da raiz compartilhados com a edicao Windows (ver docs/LINUX.md)
+      - 'InfoNode.cs'
+      - 'Vdf.cs'
+      - 'GameCatalog.cs'
+      - 'GpuSpecDb.cs'
+      - 'BenchRenderer.cs'
+      - 'GameSimBench.cs'
+      - 'ReportBuilder.cs'
+      - 'OverlayMetrics.cs'
+      - 'HowManyFpsClient.cs'
+      - 'GameRow.cs'
+      - 'NetworkTest.cs'
+      - 'DiskHealthModels.cs'
+      - 'BottleneckModel.cs'
+      - 'MemoryBenchRam.cs'
+      - 'OpenRgbBackend.cs'
+      - 'DataFolder.cs'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: 1
+  DOTNET_NOLOGO: 1
+
+jobs:
+  build-test:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, ubuntu-24.04]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: "Testes (Linux real - fixtures e leitura do proprio sistema)"
+        run: dotnet test linux/tests/InfoPC.Tests/InfoPC.Tests.csproj -c Release --logger "console;verbosity=normal"
+
+      - name: Publicar (linux-x64, binario unico)
+        run: >
+          dotnet publish linux/src/InfoPC.Linux/InfoPC.Linux.csproj -c Release -r linux-x64 --self-contained true
+          -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=None -o out
+
+      - name: Modo texto no runner
+        run: |
+          set -x
+          # dados de antes do D-028, direto em dados/: vao para a pasta deste PC
+          mkdir -p out/dados && echo '{"LightTheme":true}' > out/dados/settings.json
+          ./out/InfoPC --versao
+          ./out/InfoPC --diagnostico
+          ./out/InfoPC --diagnostico | grep -E "pasta de dados: .*/out/dados/[0-9a-f]{16}$"
+          test ! -e out/dados/settings.json
+          grep -q LightTheme out/dados/*/settings.json
+          ./out/InfoPC --info
+          ./out/InfoPC --sensores | head -60
+          ./out/InfoPC --gpu
+          ./out/InfoPC --discos
+          ./out/InfoPC --energia
+          ./out/InfoPC --relatorio relatorio.html
+          ./out/InfoPC --json > relatorio.json
+          test -s relatorio.html && test -s relatorio.json
+          python3 -c "import json;json.load(open('relatorio.json'))"
+
+  pacotes:
+    # Cada gerenciador de pacotes de verdade (D-017), em conteiner descartavel: le a lista, instala, remove e desfaz.
+    name: Pacotes - ${{ matrix.nome }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    container:
+      image: ${{ matrix.image }}
+    env:
+      INFOPC_TEST_REAL_PACKAGES: 1
+      DOTNET_SYSTEM_GLOBALIZATION_INVARIANT: 1
+      DEBIAN_FRONTEND: noninteractive
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { nome: "Debian 12",           image: "debian:12",                  pm: apt }
+          - { nome: "Ubuntu 24.04",        image: "ubuntu:24.04",               pm: apt }
+          - { nome: "Fedora 41",           image: "fedora:41",                  pm: dnf }
+          - { nome: "Arch Linux",          image: "archlinux:latest",           pm: pacman }
+          - { nome: "openSUSE Tumbleweed", image: "opensuse/tumbleweed:latest", pm: zypper }
+    steps:
+      - name: Preparar o conteiner
+        shell: sh
+        run: |
+          case "${{ matrix.pm }}" in
+            apt)    apt-get update -qq && apt-get install -y -qq curl ca-certificates tar gzip dpkg-dev passwd ;;
+            dnf)    dnf install -y -q curl ca-certificates tar gzip findutils rpm-build createrepo_c shadow-utils ;;
+            pacman) pacman -Syu --noconfirm --needed curl ca-certificates tar gzip shadow ;;
+            zypper) zypper --non-interactive refresh && zypper --non-interactive install curl ca-certificates tar gzip gawk findutils libopenssl3 libstdc++6 rpm-build createrepo_c shadow ;;
+          esac
+          # a imagem do openSUSE nao declara PATH: sem isto, o que o setup-dotnet acrescenta vira o PATH inteiro, sem o sh
+          for d in /bin /sbin /usr/bin /usr/sbin; do echo "$d" >> "$GITHUB_PATH"; done
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Repositorio local com duas versoes de um pacote
+        if: matrix.pm != 'pacman'
+        run: sh linux/tests/criar-repo-teste.sh ${{ matrix.pm }}
+
+      - name: "Lista, recuperacao e desfazer com o gerenciador real"
+        run: dotnet test linux/tests/InfoPC.Tests/InfoPC.Tests.csproj -c Release --filter "FullyQualifiedName~The_real_" --logger "console;verbosity=normal"

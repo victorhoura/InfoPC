@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <AssemblyName>InfoPC.Core</AssemblyName>
+    <RootNamespace>InfoPC</RootNamespace>
+  </PropertyGroup>
+
+  <!-- Codigo compartilhado com a edicao Windows: arquivos da raiz do repositorio ligados por link, sem copia.
+       So entram os que nao dependem de WPF, WMI nem registro (ver docs/LINUX.md, "Codigo compartilhado"). -->
+  <ItemGroup>
+    <Compile Include="..\..\..\InfoNode.cs" Link="Shared\InfoNode.cs" />
+    <Compile Include="..\..\..\Vdf.cs" Link="Shared\Vdf.cs" />
+    <Compile Include="..\..\..\GameCatalog.cs" Link="Shared\GameCatalog.cs" />
+    <Compile Include="..\..\..\GpuSpecDb.cs" Link="Shared\GpuSpecDb.cs" />
+    <Compile Include="..\..\..\BenchRenderer.cs" Link="Shared\BenchRenderer.cs" />
+    <Compile Include="..\..\..\GameSimBench.cs" Link="Shared\GameSimBench.cs" />
+    <Compile Include="..\..\..\ReportBuilder.cs" Link="Shared\ReportBuilder.cs" />
+    <Compile Include="..\..\..\OverlayMetrics.cs" Link="Shared\OverlayMetrics.cs" />
+    <Compile Include="..\..\..\HowManyFpsClient.cs" Link="Shared\HowManyFpsClient.cs" />
+    <Compile Include="..\..\..\GameRow.cs" Link="Shared\GameRow.cs" />
+    <Compile Include="..\..\..\NetworkTest.cs" Link="Shared\NetworkTest.cs" />
+    <Compile Include="..\..\..\DiskHealthModels.cs" Link="Shared\DiskHealthModels.cs" />
+    <Compile Include="..\..\..\BottleneckModel.cs" Link="Shared\BottleneckModel.cs" />
+    <Compile Include="..\..\..\MemoryBenchRam.cs" Link="Shared\MemoryBenchRam.cs" />
+    <Compile Include="..\..\..\OpenRgbBackend.cs" Link="Shared\OpenRgbBackend.cs" />
+    <Compile Include="..\..\..\DataFolder.cs" Link="Shared\DataFolder.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="InfoPC.Tests" />
+    <InternalsVisibleTo Include="InfoPC" />
+  </ItemGroup>
+
+</Project>

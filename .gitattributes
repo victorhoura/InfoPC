@@ -1,0 +1,31 @@
+# Normaliza fim de linha no repositorio (LF) e usa o padrao do sistema no checkout.
+# Evita diffs falsos quando um agente roda no Windows e outro no WSL.
+* text=auto
+
+# Arquivos que o Windows exige com CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.sln text eol=crlf
+
+# Scripts e atalhos do Linux: o shell nao aceita CRLF
+*.sh text eol=lf
+*.desktop text eol=lf
+
+# Binarios
+*.exe binary
+*.dll binary
+*.ico binary
+*.png binary
+*.jpg binary
+*.bmp binary
+*.gif binary
+*.res binary
+*.zip binary
+*.7z  binary
+
+# Historico so de acrescentar: no merge entre as branches dos agentes (worktree, D-026), junta as entradas dos dois
+colab/LOG.md merge=union
+
+# Drivers embutidos: nunca converter fins de linha (o .cat assina o conteúdo exato de .inf/.sys/.dll)
+# (regra do projeto original; precisa ficar por ultimo para valer sobre as de cima)
+Drivers/** -text

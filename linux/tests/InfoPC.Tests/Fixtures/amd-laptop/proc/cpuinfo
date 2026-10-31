@@ -1,0 +1,25 @@
+processor	: 0
+vendor_id	: AuthenticAMD
+cpu family	: 25
+model		: 116
+model name	: AMD Ryzen 7 7840HS with Radeon 780M Graphics
+stepping	: 1
+microcode	: 0xa704103
+cpu MHz		: 2000.000
+cache size	: 1024 KB
+physical id	: 0
+siblings	: 16
+core id		: 0
+cpu cores	: 8
+flags		: fpu vme svm sse sse2 avx avx2 hypervisor_no
+
+processor	: 1
+vendor_id	: AuthenticAMD
+cpu family	: 25
+model		: 116
+model name	: AMD Ryzen 7 7840HS with Radeon 780M Graphics
+cpu MHz		: 3300.000
+physical id	: 0
+core id		: 0
+cpu cores	: 8
+flags		: fpu vme svm sse sse2 avx avx2

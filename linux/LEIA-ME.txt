@@ -1,0 +1,39 @@
+InfoPC 1.1 para Linux
+=====================
+
+Ferramenta portátil de diagnóstico e ajuste do PC: informações do sistema, sensores, placa de vídeo,
+discos e S.M.A.R.T., energia, rede, biblioteca de jogos (Steam, Lutris, Heroic), FPS estimado, gargalo,
+benchmarks, stress test, overclock, otimização, programas de inicialização, instalação de apps,
+drivers e firmware, iluminação (OpenRGB) e ferramentas para Arduino/ESP32.
+
+COMO USAR
+- infopc                  abre a janela (ou procure InfoPC no menu de aplicativos)
+- infopc --ajuda          comandos de terminal: --info, --sensores, --gpu, --discos, --energia,
+                          --relatorio, --json, --diagnostico, --versao
+- infopc --diagnostico    mostra o que o programa encontrou e o que falta instalar para ler tudo
+
+PERMISSÕES
+- O programa abre como usuário comum. Quando uma ação precisa de administrador (S.M.A.R.T., módulos de RAM,
+  ajustes da Otimização, instalar apps ou drivers), ele pede a senha naquele momento (pkexec).
+- Nada é alterado no sistema sem você clicar, e os ajustes têm "Restaurar originais".
+
+DADOS
+- Configurações e histórico ficam na pasta "dados" ao lado do programa, numa subpasta para cada PC e usuário.
+  Se ela não for gravável, ficam em ~/.local/share/InfoPC. A pasta acompanha o programa (é portátil).
+- Nada é enviado pela internet sem você pedir (API de FPS, teste de rede, instalar apps ou drivers).
+
+REMOVER
+- bash desinstalar.sh           remove o programa e o atalho, mantém suas configurações
+- bash desinstalar.sh --tudo    remove também as configurações e o histórico
+
+LIMITES
+- Overlay que atravessa cliques: só em X11/XWayland. O FPS dentro do jogo vem do MangoHud
+  (o InfoPC escreve a configuração dele).
+- Temperatura e consumo dependem dos drivers do kernel (k10temp, coretemp...) e das permissões do sistema.
+
+CRÉDITOS E LICENÇA
+- InfoPC é baseado no RESET EXPLODE, de Gustavo (GustavoReset), licença MIT.
+  O texto da licença está no arquivo LICENSE.txt, junto com o programa.
+- Código-fonte: https://github.com/victorhoura/InfoPC
+- Bibliotecas de terceiros e seus termos: THIRD-PARTY-NOTICES.txt, junto com o programa.
+- Interface em Avalonia (MIT), fonte Inter (SIL OFL 1.1), desenho com SkiaSharp (MIT).
