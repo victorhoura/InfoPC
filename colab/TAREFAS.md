@@ -19,6 +19,7 @@ Legenda: `[ ]` pendente · `[~]` em andamento · `[x]` concluída · responsáve
 - [x] Compilar sem alterações: 0 erros, 16 avisos; pacote portátil de ~197 MB (claude)
 - [x] Mapear a arquitetura em `docs/ARQUITETURA.md` (claude)
 - [x] Listar onde o código viola os requisitos: ver Fase 3 (claude)
+- [ ] Revisão cruzada das correções da 1.1.2 e do workflow Conferencia (`8271e68..main`) (codex). Comando no HANDOFF.
 - [ ] Revisão cruzada da abertura do código (D-030): retirada dos drivers, `THIRD-PARTY-NOTICES.txt` e versão 1.1.1 (codex). Comando no HANDOFF.
 - [ ] Revisão cruzada de R14-A/B, da identidade sem `libssl` e do workflow de publicação (`86f1d7b..` até o último commit de documentação do claude) (codex).
 - [x] Revisão cruzada da importação (codex, 2026-10-28; 119/121 arquivos conferidos com o upstream, ressalvas do código no relatório)
@@ -32,7 +33,7 @@ Legenda: `[ ]` pendente · `[~]` em andamento · `[x]` concluída · responsáve
 - [x] Script sem ocorrências inesperadas para cada termo de `docs/UPSTREAM.md`, seção 4 (claude)
 - [x] Compilar (0 erros, 16 avisos) e gerar o pacote portátil `dist\InfoPC.exe` (claude)
 - [x] Hospedar no GitHub do usuário, repositório privado (D-014) (claude)
-- [ ] Abrir o `InfoPC.exe` e conferir que as abas carregam, o logo aparece e o título diz InfoPC (usuário; pede administrador)
+- [x] Abrir o `InfoPC.exe` e conferir que as abas carregam, o logo aparece e o título diz InfoPC: as 21 páginas no PC real, sem conexão externa nem mudança no sistema ao abrir (claude, 2026-10-31).
 - [x] Revisão cruzada da importação e da renomeação, até `9b168be` inclusive (codex, 2026-10-28; relatório abaixo)
 
 ## Fase 3 — Ajustes aos requisitos (AGENTS.md, seção 2)
@@ -47,9 +48,9 @@ Legenda: `[ ]` pendente · `[~]` em andamento · `[x]` concluída · responsáve
 - [x] Revisão cruzada da correção dos achados restantes: R03, R05, R07–R13, o mesmo padrão do R04 e três achados pequenos (`2050100..a797014`): **REPROVADO**, quatro bloqueantes e um importante; relatório abaixo (codex, 2026-10-29).
 - [x] Revisão cruzada das correções R01, R02, R04, R05 e R06 (`b7e58dc..e328c68`), incluindo os commits posteriores do D-026 até `78e714a`: **REPROVADO**, R05 parcial; demais confirmados no escopo testado (codex, concluída em 2026-10-29; relatório abaixo).
 - [x] Revisão cruzada da Fase 3 junto com todo o histórico até `9b168be`: **REPROVADO** (codex, 2026-10-28).
-- [ ] Abrir o `InfoPC.exe` e conferir FPS estimado (sem e com chave), Drivers (abrir a página, depois VERIFICAR TUDO), perfil de jogo e RESTAURAR ORIGINAL da Steam (usuário; pede administrador)
+- [~] FPS estimado sem chave, Drivers com VERIFICAR TUDO, perfil de jogo e RESTAURAR ORIGINAL da Steam: conferidos no PC real (claude, 2026-10-31). Falta o FPS **com** chave, que depende de uma chave da HowManyFPS (usuário).
 - [x] Conferir os termos de redistribuição dos drivers de `Drivers/` e as licenças "a conferir": feito, com CH340, CP210x e FTDI retirados (D-030, `docs/UPSTREAM.md`) (claude, 2026-10-30).
-- [~] Gerar o pacote final (D-029, D-030): `v1.1.1` publicada como pré-lançamento no repositório público, com `InfoPC.exe` aberto em Windows limpo do CI (claude, 2026-10-30).
+- [~] Gerar o pacote final (D-029, D-030): `v1.1.2` publicada como pré-lançamento no repositório público, com `InfoPC.exe` aberto em Windows limpo do CI e usado no PC real (claude, 2026-10-31).
 
 ## Fase 4 — Edição Linux (D-017 a D-023)
 
@@ -62,10 +63,15 @@ Legenda: `[ ]` pendente · `[~]` em andamento · `[x]` concluída · responsáve
 - [x] `linux/instalar.sh`, `linux/desinstalar.sh`, atalho `.desktop` (claude)
 - [x] CI em Ubuntu, Debian, Fedora, Arch e openSUSE, verde (claude)
 - [x] `docs/LINUX.md`, README, NOVIDADES, ARQUITETURA, licenças em UPSTREAM; versão 1.1.0 no Windows (claude)
-- [ ] Teste manual em hardware Linux real: abrir, navegar nas páginas, sensores, S.M.A.R.T. (usuário)
+- [~] Teste em Linux: `pkexec`, `ubuntu-drivers`, hidepid, FAT32, exFAT e janela em GNOME e KDE conferidos em máquina virtual (D-031). Falta hardware físico: sensores, S.M.A.R.T. e GPU de verdade (usuário).
 - [x] Revisão cruzada da edição Linux até `9b168be`: **REPROVADO**, correções pendentes abaixo (codex, 2026-10-28).
 
 ## Achados (fora do escopo da tarefa em que foram vistos)
+
+Achados no PC real em 2026-10-31, sem mudança nesta entrega. Os dois primeiros foram medidos lado a lado com o original 0.16 e são iguais; o terceiro não foi comparado:
+- [ ] Windows: os sensores levam cerca de 75 s para a primeira leitura neste PC (73,5 s no original, 74,8 s no InfoPC). Até lá, a Visão geral diz "sem leitura da CPU" e Sensores fica em "Detectando o hardware...".
+- [ ] Windows: a memória salta de cerca de 280 MB para 760 MB depois de abrir Drivers ou Integração.
+- [ ] Windows: "Clock médio" do Benchmark e "Núcleo mais ocupado" do Gargalo ficam em branco neste PC (i5-10400).
 
 Revisão de 2026-10-28: [histórico e Fase 3](revisoes/2026-10-28-claude-historico-e-fase3.md), R01–R13. Correções de comportamento cabem ao autor; mudanças relativas aos requisitos aguardam orientação do usuário (AGENTS.md, seções 2 e 5). A revisão está concluída; a aprovação da entrega depende dos achados.
 

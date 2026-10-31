@@ -11,8 +11,10 @@ Distribuições com glibc, em x86_64 ou arm64: Ubuntu, Debian, Mint, Fedora, Arc
 **Sem compilar:** baixe o pacote pronto da Release, sem login. Em arm64, troque `linux-x64` por `linux-arm64`.
 
 ```bash
-curl -fsSL https://github.com/victorhoura/InfoPC/releases/download/v1.1.1/InfoPC-1.1.1-linux-x64.tar.gz | tar xz && ./InfoPC/InfoPC
+curl -fsSL https://github.com/victorhoura/InfoPC/releases/download/v1.1.2/InfoPC-1.1.2-linux-x64.tar.gz | tar xz && ./InfoPC/InfoPC
 ```
+
+A janela usa X11: em sessão Wayland ela abre pelo XWayland, conferido em GNOME e KDE. Sem XWayland ou sem sessão gráfica, o programa explica o que falta, e o modo texto continua funcionando.
 
 O programa fica na pasta `InfoPC`, com os dados em `InfoPC/dados`. Para ter o comando `infopc` e o atalho no menu, use a instalação abaixo, que compila a partir do clone.
 
@@ -108,7 +110,7 @@ Overlay em Wayland puro não é possível (só X11/XWayland).
 
 ```
 linux/
-  Directory.Build.props            versão 1.1.1, InvariantGlobalization
+  Directory.Build.props            versão 1.1.2, InvariantGlobalization
   instalar.sh  desinstalar.sh      instalação sem root
   src/InfoPC.Core/                 lógica sem interface (net8.0, namespace InfoPC)
   src/InfoPC.Linux/                janela Avalonia (exe InfoPC)

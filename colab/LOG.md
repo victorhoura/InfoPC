@@ -140,3 +140,9 @@
 - Saem CH340, CP210x, FTDI, `arduino-org` e `arduino_gemma`; a aba Maker aponta para a página oficial. Entram `THIRD-PARTY-NOTICES.txt` e a versão 1.1.1.
 - Windows: 0 erros, 16 avisos. Linux: 237 testes passando no Windows. Não verificado: a tela nova da aba Maker, aberta de verdade. Revisão: pendente (codex).
 - Publicada a `v1.1.1` no repositório público (run `41161588052`, verde). Download sem login testado com `curl` e `sha256sum -c`. O antigo está como `InfoPC-antigo`, privado, até o usuário liberar a permissão de apagar.
+
+## 2026-10-31 — claude — entrega — correções da 1.1.2 e conferência em PC real e Linux
+
+- Pedido do usuário: verificar o que faltava e dizer se o programa perdeu função. Comparação com a importação: só saíram o botão INSTALAR TODOS e os drivers de D-030. As 21 páginas e os cliques com desfazer foram testados no PC real.
+- `9fa58b3`: interruptores depois de RESTAURAR ORIGINAIS, tabulação na opção da Steam, sobreposições. `7c884b5`, `f2b7771`: sem tela, explica em vez de abortar. `cc0f37a`, `5297adb`: workflow Conferencia (D-031), verde em `f2b7771` (run `41209509537`).
+- Windows: 0 erros, 16 avisos. Linux: 248 testes passando no Windows. Revisão: pendente (codex).

@@ -1,3 +1,16 @@
+## Novidades da v1.1.2
+
+Correções de defeitos achados usando o programa de verdade:
+
+**Windows**
+- Otimização: depois de RESTAURAR ORIGINAIS, os interruptores mostram a posição real. O Windows já voltava certo, mas a tela continuava na posição antiga.
+- Biblioteca: gravar e restaurar as opções da Steam deixa o arquivo da Steam igual ao de antes. Antes, a tabulação de outra opção (o atalho do overlay) virava o texto `\t`.
+- Visão geral, Placa de vídeo, Gargalo e Stress test: botões e cartões não se sobrepõem nem cortam o texto na janela padrão.
+
+**Linux**
+- Sem sessão gráfica, em Wayland sem XWayland ou sem biblioteca gráfica, o programa explica o que falta em vez de abortar com core dump.
+- Autorização de administrador recusada: a mensagem agora diz isso e mostra o comando para o terminal.
+
 ## Novidades da v1.1.1
 
 **Código aberto**
