@@ -19,7 +19,7 @@ Legenda: `[ ]` pendente · `[~]` em andamento · `[x]` concluída · responsáve
 - [x] Compilar sem alterações: 0 erros, 16 avisos; pacote portátil de ~197 MB (claude)
 - [x] Mapear a arquitetura em `docs/ARQUITETURA.md` (claude)
 - [x] Listar onde o código viola os requisitos: ver Fase 3 (claude)
-- [ ] Revisão cruzada da correção de R14-C e R15-A e da `v1.1.3` (`218dcda..main`, só commits do claude) (codex).
+- [x] Revisão cruzada da correção de R14-C e R15-A e da `v1.1.3` (`218dcda..ae85961`, só commits do claude) (codex, 2026-10-31). **REPROVADO**: reproduções originais corrigidas; R14-D bloqueante e R14-E importante, relatório abaixo.
 - [x] Revisão cruzada das correções da 1.1.2 e do workflow Conferencia (`8271e68..12b823f`) (codex, 2026-10-31). R15-A importante no teste de ubuntu-drivers; relatório abaixo.
 - [x] Revisão cruzada da abertura do código (D-030): retirada dos drivers, `THIRD-PARTY-NOTICES.txt` e versão 1.1.1 (codex, 2026-10-31). Créditos e drivers mantidos preservados; ressalva documental do DXIL no relatório.
 - [x] Revisão cruzada de R14-A/B, da identidade sem `libssl` e do workflow de publicação (`86f1d7b..1383196` da história privada) (codex, 2026-10-31). **REPROVADO**, R14-C bloqueante na seleção dos dados.
@@ -39,11 +39,11 @@ Legenda: `[ ]` pendente · `[~]` em andamento · `[x]` concluída · responsáve
 
 ## Fase 3 — Ajustes aos requisitos (AGENTS.md, seção 2)
 
-- [~] Configurações e dados na pasta do .exe em vez de `%AppData%\InfoPC` (requisito 3, D-028): R14-A e trocas de R14-B com datas distintas confirmados por codex em 2026-10-31; **R14-C bloqueante** com datas iguais/arredondadas ainda pendente. Abertura no PC real conferida pelo claude; não repetida pelo revisor por limite explícito do usuário.
+- [~] Configurações e dados na pasta do .exe em vez de `%AppData%\InfoPC` (requisito 3, D-028): R14-A/B e reproduções originais de R14-C com datas iguais/arredondadas confirmados por codex em 2026-10-31. **R14-D bloqueante** na falha de leitura da trilha e R14-E importante entre três cópias ainda pendentes. Abertura no PC real conferida pelo claude; não repetida pelo revisor por limite explícito do usuário.
 - [x] Auditoria completa de acesso à internet (requisito 5): resultado em `docs/ARQUITETURA.md`, "Acesso à internet" (claude)
 - [x] Conferir que toda alteração no sistema tem "desfazer" (requisito 4): resultado em `docs/ARQUITETURA.md`, "Alterações no sistema e como desfazer" (claude)
 - [x] **Requisito 5:** HowManyFPS e versões de driver só depois de um clique, nas duas edições (D-024): `e1e5354`, `9791bd7` (claude)
-- [x] **Requisito 4:** correções entregues em `48fe432`, `2f2bbc4`, `764eb5a`, `4f99aaf` (D-025, claude); a revisão encontrou falhas de restauração/persistência. R02–R10 e complemento R04-C confirmados no escopo dos relatórios. Revisão de 2026-10-31 confirma R14-A e trocas de R14-B com datas distintas; R14-C segue pendente na continuidade dos dados.
+- [x] **Requisito 4:** correções entregues em `48fe432`, `2f2bbc4`, `764eb5a`, `4f99aaf` (D-025, claude); a revisão encontrou falhas de restauração/persistência. R02–R10 e complemento R04-C confirmados no escopo dos relatórios. Revisão de 2026-10-31 confirma R14-A/B e reproduções originais de R14-C; R14-D/E seguem pendentes na continuidade dos dados.
 - [x] Revisão cruzada da correção de R10-C, do job de pacotes do CI e da pasta de dados (`fbfc2e4..86f1d7b`, só commits do claude e sem merges): **REPROVADO**, dois bloqueantes (R14-A/B); R10-C confirmado, relatório abaixo (codex, 2026-10-30).
 - [x] Revisão cruzada das correções R04-C, R09-C, R10-A/B e R12-C (`467fbc0..fbfc2e4`): **REPROVADO**, um bloqueante (R10-C); relatório abaixo (codex, 2026-10-30).
 - [x] Revisão cruzada da correção dos achados restantes: R03, R05, R07–R13, o mesmo padrão do R04 e três achados pequenos (`2050100..a797014`): **REPROVADO**, quatro bloqueantes e um importante; relatório abaixo (codex, 2026-10-29).
@@ -51,7 +51,7 @@ Legenda: `[ ]` pendente · `[~]` em andamento · `[x]` concluída · responsáve
 - [x] Revisão cruzada da Fase 3 junto com todo o histórico até `9b168be`: **REPROVADO** (codex, 2026-10-28).
 - [~] FPS estimado sem chave, Drivers com VERIFICAR TUDO, perfil de jogo e RESTAURAR ORIGINAL da Steam: conferidos no PC real (claude, 2026-10-31). Falta o FPS **com** chave, que depende de uma chave da HowManyFPS (usuário).
 - [x] Conferir os termos de redistribuição dos drivers de `Drivers/` e as licenças "a conferir": feito, com CH340, CP210x e FTDI retirados (D-030, `docs/UPSTREAM.md`) (claude, 2026-10-30).
-- [~] Gerar o pacote final (D-029, D-030): `v1.1.3` publicada como pré-lançamento no repositório público, com `InfoPC.exe` aberto em Windows limpo do CI e usado no PC real (claude, 2026-10-31).
+- [~] Gerar o pacote final (D-029, D-030): `v1.1.3` publicada como pré-lançamento no repositório público. Codex confirmou tag `ae85961`, logs do CI, conteúdo e hashes dos três pacotes em 2026-10-31, sem executar binários; o código publicado ainda tem R14-D/E. Abertura no PC real é evidência do claude.
 
 ## Fase 4 — Edição Linux (D-017 a D-023)
 
@@ -76,7 +76,7 @@ Achados no PC real em 2026-10-31, sem mudança nesta entrega. Os dois primeiros 
 
 Revisão de 2026-10-28: [histórico e Fase 3](revisoes/2026-10-28-claude-historico-e-fase3.md), R01–R13. Correções de comportamento cabem ao autor; mudanças relativas aos requisitos aguardam orientação do usuário (AGENTS.md, seções 2 e 5). A revisão está concluída; a aprovação da entrega depende dos achados.
 
-- [x] Os testes do CI rodavam só no Ubuntu: o job `pacotes` de `linux.yml` agora roda lista, recuperação, desfazer, volta de versão (`--allow-downgrades`, `--oldpackage`) e grupos (`usermod`, `gpasswd`) em Debian, Ubuntu, Fedora, Arch e openSUSE (claude, 2026-10-30). Logs de `pkexec` e hidepid reais no Conferencia consultados por codex em 2026-10-31; a comprovação de sucesso do ubuntu-drivers tem R15-A pendente.
+- [x] Os testes do CI rodavam só no Ubuntu: o job `pacotes` de `linux.yml` agora roda lista, recuperação, desfazer, volta de versão (`--allow-downgrades`, `--oldpackage`) e grupos (`usermod`, `gpasswd`) em Debian, Ubuntu, Fedora, Arch e openSUSE (claude, 2026-10-30). Logs de `pkexec` e hidepid reais no Conferencia consultados por codex em 2026-10-31; sucesso de ubuntu-drivers confirmado após a correção de R15-A, no run `41246005320`.
 
 Revisão direcionada das correções: [principais achados](revisoes/2026-10-29-claude-correcao-achados-principais.md), correções até `e328c68` e fluxo de worktrees até `78e714a`. Quatro confirmados; R05 continua parcial.
 
@@ -103,9 +103,11 @@ Achado fora da revisão (claude, 2026-10-30): com os dados junto do programa, o 
 - [x] R13 — **IMPORTANTE:** não concluir ausência de erros de hardware quando o log do kernel não pôde ser lido. `eeede1d` (claude; codex confirmou INCONCLUSIVO sem log e precedência de falha real, 2026-10-29).
 - [x] Mesmo padrão do R04 em outros desfazer: COM/inicialização Windows (`b04a026`) inspecionados/compilados; Otimizador e inicialização Linux (`766436a`, `d6624c2`) com testes passando. R04-C (leitura parcial na Otimização Windows) corrigido em `aea3c39` (claude; codex confirmou captura revertida, nova tentativa com persistência antes da escrita e preservação de backups anteriores, 2026-10-30; sem alterar o plano real).
 - [x] R14-A — **BLOQUEANTE:** fallback Linux ignorado na migração do D-028. Corrigido em `9f59043` (claude); codex confirmou com Save/Load e `AppSettings.ResolveFolder()` reais em diretórios descartáveis, 2026-10-31.
-- [x] R14-B — **BLOQUEANTE:** retorno direto a fallback antigo/vazio. Correção de `9f59043` confirmada pelo codex em 2026-10-31 para dados com datas distintas, nos dois sentidos. A seleção ainda falha em datas iguais/arredondadas: complemento R14-C abaixo, sem aprovação integral da migração.
-- [~] R14-C — **BLOQUEANTE:** `DataFolder.Resolve` usa somente a data do `settings.json` e, em empate, prefere a pasta gravável. Conteúdos distintos com a mesma data fazem carregar o fallback antigo sem aviso; redução de precisão pode inverter a escolha e arquivar o estado correto. Reproduzido com Save/Load reais sem alterar o sistema (codex, 2026-10-31; claude corrige). [Relatório](revisoes/2026-10-31-claude-r14-publicacao-e-conferencia.md). Corrigido em `c8a04cc` (claude, 2026-10-31; D-032). Aguarda revisão do codex.
-- [~] R15-A — **IMPORTANTE:** `ConferenciaTests.cs:73` aceita erro de `ubuntu-drivers devices` quando o programa está instalado; `UbuntuRecommended()==null` também aceita falha. Conferir o resultado do comando para que o workflow comprove a execução bem-sucedida (codex, 2026-10-31; claude corrige). Mesmo relatório de R14-C. Corrigido em `c8a04cc` (claude, 2026-10-31). Aguarda revisão do codex.
+- [x] R14-B — **BLOQUEANTE:** retorno direto a fallback antigo/vazio. Correção de `9f59043` confirmada pelo codex em 2026-10-31 para dados com datas distintas, nos dois sentidos. A falha complementar com datas iguais/arredondadas foi corrigida e revisada em R14-C abaixo; aprovação integral da migração depende agora de R14-D/E.
+- [x] R14-C — **BLOQUEANTE:** seleção pela data com empate/arredondamento. Corrigido em `c8a04cc` (claude, 2026-10-31; D-032); codex repetiu as duas reproduções originais com Save/Load e confirmou ida e volta sem perder registros. A seleção integral ainda depende de R14-D/E. [Revisão da correção](revisoes/2026-10-31-claude-r14c-r15a-113.md).
+- [x] R15-A — **IMPORTANTE:** teste de `ubuntu-drivers devices` aceitava erro quando o comando estava instalado. Corrigido em `c8a04cc`; codex confirmou asserção de sucesso/timeout e execução ativa no modo `polkit-sim` do run `41246005320`, em 2026-10-31. Mesmo relatório de R14-C.
+- [ ] R14-D — **BLOQUEANTE:** falha ao ler a trilha vira ausência de trilha e faz a cópia anterior ganhar sem aviso. Reproduzido nos dois sentidos com Save/Load reais e `FileShare.None` apenas em arquivos descartáveis; `uucp` some do desfazer acessível, embora continue no arquivo posterior. Corrigir no claude. [Relatório e roteiro reproduzível](revisoes/2026-10-31-claude-r14c-r15a-113.md).
+- [ ] R14-E — **IMPORTANTE:** a redução sequencial entre três candidatas pode escolher uma ancestral da portátil quando a terceira ramificação tem data intermediária; arquiva a sucessora conhecida e avisa usando o caminho antigo que acabou de mover. Roteiro próprio confirma o caso com a antiga `dados/`. Corrigir no claude; mesmo relatório de R14-D.
 
 - 16 avisos de nulabilidade no build do original (`MainWindow.Oc.cs`, `DiskHealth.cs`). Não corrigir de carona.
 - Não há testes automatizados no original (a edição Linux tem a suíte em `linux/tests`).

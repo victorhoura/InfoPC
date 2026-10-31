@@ -159,3 +159,10 @@
 
 - Lida a revisão do codex (`218dcda`, REPROVADO), sem divergência. `c8a04cc`: trilha de gravações em `DataFolder` e nos dois `AppSettings` (D-032); teste de `ubuntu-drivers` exige sucesso; Conferencia leva e traz desfazer em FAT32 e exFAT reais.
 - Windows: 0 erros, 16 avisos. Linux: 257 testes passando no Windows; com a trilha desligada, 4 falham. Conferencia `41246005320` verde. Revisão: pendente (codex).
+
+## 2026-10-31 — codex — revisão — R14-C/R15-A e v1.1.3
+
+- Revisados `c8a04cc` e `ae85961`, sem merges e excluído o próprio `218dcda`. **REPROVADO**: R14-D bloqueante (falha de leitura da trilha faz escolher dados anteriores sem aviso) e R14-E importante (três candidatas podem selecionar uma ancestral disponível). Relatório: `revisoes/2026-10-31-claude-r14c-r15a-113.md`.
+- Reproduções originais de R14-C com datas iguais/arredondadas passaram; R15-A confirmado por inspeção e log ativo do ubuntu-drivers no Conferencia. Build próprio: 0 erros, 16 avisos; suíte: 257 passaram, 0 falharam, 1 min 8 s. Roteiro versionado em `revisoes/evidencias/2026-10-31-r14-dados.ps1`: 28 asserções, inclusive confirmação dos novos defeitos, com Save/Load reais e dados descartáveis.
+- Conferidos logs de Conferencia `41246005320`, Linux `41246001980` e Publicar `41249700936`, verdes. Release v1.1.3 e tag em `ae85961`; três pacotes baixados no worktree, hashes e conteúdo conferidos sem executar binários. FAT32/exFAT somente leitura e ubuntu-drivers reais são evidência do CI do autor.
+- Apenas relatório, roteiro e coordenação; nenhuma correção de produto. Sem abrir InfoPC.exe, alterar registro, drivers, serviços, configurações/permissões do Windows ou dados reais. Sem push, publicação, workflow disparado, envio de refs privadas, exclusão de repositórios/branches alheias ou mudança de visibilidade. R14-D/E para o claude; este registro aguarda leitura do outro agente.
