@@ -405,6 +405,142 @@ public sealed class DataFolderTests : IDisposable
         Assert.False(File.Exists(Path.Combine(Target, "settings.json")));
     }
 
+    /// <summary>Grava pelo Save real, para a trilha ser a verdadeira, e deixa a data escolhida no arquivo.</summary>
+    private void SaveReal(string folder, IEnumerable<string> groups, DateTime when, AppSettings? from = null)
+    {
+        string before = AppSettings.Folder;
+        try
+        {
+            AppSettings.Folder = folder;
+            var s = from ?? AppSettings.Load();
+            s.GroupsAdded = groups.ToList();
+            s.Save();
+            File.SetLastWriteTimeUtc(Path.Combine(folder, "settings.json"), when);
+        }
+        finally { AppSettings.Folder = before; }
+    }
+
+    private static List<string> LoadGroups(string folder)
+    {
+        string before = AppSettings.Folder;
+        try { AppSettings.Folder = folder; return AppSettings.Load().GroupsAdded; }
+        finally { AppSettings.Folder = before; }
+    }
+
+    [Fact]
+    public void Same_date_the_trail_still_brings_the_later_undo_records_back_and_forth()
+    {
+        // R14-C: duas gravações no mesmo instante, ou numa mídia de pouca precisão
+        SaveReal(Fallback, new[] { "dialout" }, Old);
+        string first = Resolve(out _);
+        Assert.Equal(Target, first);
+        SaveReal(first, new[] { "dialout", "uucp" }, Old);
+
+        using (BlockWrites())
+        {
+            string back = Resolve(out var notice);
+            Assert.Equal(Fallback, back);
+            Assert.Equal(new[] { "dialout", "uucp" }, LoadGroups(back));
+            Assert.NotNull(notice);
+        }
+        SaveReal(Fallback, new[] { "dialout", "uucp", "plugdev" }, Old);
+
+        string again = Resolve(out var last);
+        Assert.Equal(Target, again);
+        Assert.Equal(new[] { "dialout", "uucp", "plugdev" }, LoadGroups(again));
+        Assert.Contains("mais recentes", last);
+        Assert.Null(ResolveAgainNotice());
+    }
+
+    private string? ResolveAgainNotice() { Resolve(out var notice); return notice; }
+
+    [Fact]
+    public void Rounded_dates_do_not_let_the_older_copy_win()
+    {
+        // a mais antiga com data maior, como ao arredondar para o FAT: a trilha decide
+        SaveReal(Fallback, new[] { "dialout" }, Old.AddSeconds(0.8));
+        Resolve(out _);
+        SaveReal(Target, new[] { "dialout", "uucp" }, Old);
+
+        Assert.Equal(Target, Resolve(out var notice));
+        Assert.Null(notice);
+        Assert.Equal(new[] { "dialout", "uucp" }, LoadGroups(Target));
+        Assert.Empty(Directory.GetDirectories(Path.Combine(Exe, "dados"), "*.anterior-*"));
+    }
+
+    [Fact]
+    public void Copies_that_diverged_never_overwrite_each_other_in_silence()
+    {
+        // o pen drive ficou em outro lugar, e cada lado continuou gravando
+        SaveReal(Fallback, new[] { "base" }, Old);
+        Resolve(out _);
+        SaveReal(Target, new[] { "base", "portatil" }, Old);
+        SaveReal(Fallback, new[] { "base", "fallback" }, Old);
+
+        Assert.Equal(Target, Resolve(out var notice));
+        Assert.Contains("alterações diferentes", notice);
+        Assert.Equal(new[] { "base", "portatil" }, LoadGroups(Target));
+        string kept = Assert.Single(Directory.GetDirectories(_root, "fallback.anterior-*"));
+        Assert.Contains(kept, notice);
+        Assert.Equal(new[] { "base", "fallback" }, LoadGroups(kept));
+        Assert.Null(ResolveAgainNotice());
+    }
+
+    [Fact]
+    public void Diverged_copy_with_a_clearly_later_date_is_used_and_the_other_is_kept()
+    {
+        SaveReal(Fallback, new[] { "base" }, Old);
+        Resolve(out _);
+        SaveReal(Target, new[] { "base", "portatil" }, Old);
+        SaveReal(Fallback, new[] { "base", "fallback" }, Newer);
+
+        Assert.Equal(Target, Resolve(out var notice));
+        Assert.Contains("alterações diferentes", notice);
+        Assert.Equal(new[] { "base", "fallback" }, LoadGroups(Target));
+        string kept = Assert.Single(Directory.GetDirectories(Path.Combine(Exe, "dados"), Me + ".anterior-*"));
+        Assert.Equal(new[] { "base", "portatil" }, LoadGroups(kept));
+    }
+
+    [Fact]
+    public void Old_format_copies_with_the_same_date_and_different_content_are_not_replaced_silently()
+    {
+        Put("fallback/settings.json", "{\"GroupsAdded\":[\"antigo\"]}", Old);
+        Put("exe/dados/" + Me + "/settings.json", "{\"GroupsAdded\":[\"novo\"]}", Old.AddSeconds(1));
+
+        Assert.Equal(Target, Resolve(out var notice));
+        Assert.Contains("alterações diferentes", notice);
+        Assert.Contains("novo", Read(Target));
+        Assert.Contains("antigo", Read(Assert.Single(Directory.GetDirectories(_root, "fallback.anterior-*"))));
+    }
+
+    [Fact]
+    public void Old_format_copies_with_the_same_content_stay_quiet()
+    {
+        Put("fallback/settings.json", "{}", Old);
+        Put("exe/dados/" + Me + "/settings.json", "{}", Old.AddSeconds(1));
+        Assert.Equal(Target, Resolve(out var notice));
+        Assert.Null(notice);
+    }
+
+    [Fact]
+    public void A_copy_with_a_trail_wins_over_one_from_a_previous_version_even_with_an_older_date()
+    {
+        SaveReal(Target, new[] { "com-trilha" }, Old);
+        Put("fallback/settings.json", "{\"GroupsAdded\":[\"versao-anterior\"]}", Newest);
+        Assert.Equal(Target, Resolve(out var notice));
+        Assert.Null(notice);
+        Assert.Equal(new[] { "com-trilha" }, LoadGroups(Target));
+    }
+
+    [Fact]
+    public void The_trail_stays_small_and_each_save_adds_a_new_mark()
+    {
+        var trail = new List<string>();
+        for (int i = 0; i < 300; i++) trail = DataFolder.Advance(trail);
+        Assert.Equal(256, trail.Count);
+        Assert.Equal(trail.Count, trail.Distinct().Count());
+    }
+
     [Fact]
     public void Nothing_to_bring_over_does_not_touch_anything()
     {

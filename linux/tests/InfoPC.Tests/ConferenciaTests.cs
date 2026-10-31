@@ -52,6 +52,44 @@ public class ConferenciaTests
     }
 
     [Fact]
+    public void Pen_drive_de_verdade_leva_e_traz_o_desfazer_com_a_data_arredondada()
+    {
+        if (Modo != "pendrive") return;
+        string pen = Environment.GetEnvironmentVariable("CONFERENCIA_PEN")!;
+        string fallback = Directory.CreateTempSubdirectory("infopc-fallback").FullName;
+        const string me = "0123456789abcdef";
+        string before = AppSettings.Folder;
+        void Remount(string mode) => Assert.True(Shell.Run("sudo", new[] { "mount", "-o", "remount," + mode, Environment.GetEnvironmentVariable("CONFERENCIA_MONTAGEM")! }, 30000).Ok);
+        List<string> Groups(string dir) { AppSettings.Folder = dir; return AppSettings.Load().GroupsAdded; }
+        void Add(string dir, string group) { AppSettings.Folder = dir; var s = AppSettings.Load(); s.GroupsAdded.Add(group); s.Save(); }
+        try
+        {
+            string first = DataFolder.Resolve(pen, me, fallback, out _);
+            Assert.StartsWith(pen, first);
+            Add(first, "um");
+
+            Remount("ro");
+            string away = DataFolder.Resolve(pen, me, fallback, out var notice);
+            Assert.Equal(fallback, away);
+            Assert.NotNull(notice);
+            Assert.Equal(new[] { "um" }, Groups(away));
+            Add(away, "dois");
+            Remount("rw");
+
+            string back = DataFolder.Resolve(pen, me, fallback, out notice);
+            Assert.Equal(first, back);
+            Assert.Equal(new[] { "um", "dois" }, Groups(back));
+            Add(back, "tres");
+
+            // abrir de novo não troca nada, com a data arredondada pelo sistema de arquivos
+            Assert.Equal(first, DataFolder.Resolve(pen, me, fallback, out notice));
+            Assert.Null(notice);
+            Assert.Equal(new[] { "um", "dois", "tres" }, Groups(first));
+        }
+        finally { AppSettings.Folder = before; Directory.Delete(fallback, true); }
+    }
+
+    [Fact]
     public void Com_hidepid_o_programa_sabe_que_nao_ve_os_instaladores()
     {
         if (Modo != "hidepid") return;
@@ -70,8 +108,12 @@ public class ConferenciaTests
     public void Ubuntu_drivers_de_verdade_responde_sem_placa_recomendada()
     {
         if (Modo != "polkit-sim") return;
-        Assert.True(Shell.Run("ubuntu-drivers", new[] { "devices" }, 60000).Ok || Shell.Has("ubuntu-drivers"));
-        // a máquina do CI não tem GPU: nada a recomendar, e a chamada real não pode quebrar
+        Assert.True(Shell.Has("ubuntu-drivers"));
+        var r = Shell.Run("ubuntu-drivers", new[] { "devices" }, 60000);
+        Assert.False(r.TimedOut, "ubuntu-drivers esgotou o tempo");
+        // a máquina do CI não tem GPU: o comando funciona e não tem nada a recomendar
+        Assert.True(r.Ok, $"ubuntu-drivers devices falhou, código {r.ExitCode}: {r.Err}");
+        Assert.DoesNotContain("recommended", r.Out);
         Assert.Null(DriverInfo.UbuntuRecommended());
     }
 }

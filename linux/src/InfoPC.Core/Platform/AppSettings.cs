@@ -78,6 +78,9 @@ public sealed class AppSettings
     private static string MachineId() =>
         new[] { "/etc/machine-id", "/var/lib/dbus/machine-id" }.Select(Sys.Read).FirstOrDefault(id => !string.IsNullOrEmpty(id)) ?? Environment.MachineName;
 
+    /// <summary>Marcas das últimas gravações: mostram qual cópia dos dados veio depois (<see cref="DataFolder.Advance"/>).</summary>
+    public List<string> DataTrail { get; set; } = new();
+
     public string? HowManyFpsKey { get; set; }
 
     public List<BenchRun> BenchRuns { get; set; } = new();
@@ -124,6 +127,7 @@ public sealed class AppSettings
 
     public void Save()
     {
+        DataTrail = DataFolder.Advance(DataTrail);
         Directory.CreateDirectory(Folder);
         if (!OperatingSystem.IsWindows())
             try { File.SetUnixFileMode(Folder, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute); } catch { }

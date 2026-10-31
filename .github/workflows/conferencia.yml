@@ -110,6 +110,9 @@ jobs:
             sudo mount -o remount,ro "/mnt/$fs"
             (cd "/mnt/$fs/InfoPC" && ./InfoPC --diagnostico) | tee "diag-$fs-ro.txt"
             grep -q "\.local/share/InfoPC" "diag-$fs-ro.txt" || { echo "sem gravar no pen drive, deveria usar a pasta do usuario"; exit 1; }
+            sudo mount -o remount,rw "/mnt/$fs"
+            mkdir "/mnt/$fs/desfazer"
+            CONFERENCIA=pendrive CONFERENCIA_PEN="/mnt/$fs/desfazer" CONFERENCIA_MONTAGEM="/mnt/$fs" dotnet test linux/tests/InfoPC.Tests/InfoPC.Tests.csproj -c Release --filter Categoria=Conferencia --logger "console;verbosity=normal"
             sudo umount "/mnt/$fs"
             echo "::endgroup::"
           done

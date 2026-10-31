@@ -1,5 +1,6 @@
 using System.IO;
 using System.Text;
+using System.Text.Json;
 
 namespace InfoPC;
 
@@ -12,6 +13,11 @@ public static class DataFolder
     private const string Partial = ".migrando";
     private const string Previous = ".anterior-";
     private const string Probe = ".gravavel-";
+    private const int TrailSize = 256;
+    /// <summary>A data de gravação do FAT tem resolução de 2 segundos: dentro disso, a data não diz qual cópia veio depois.</summary>
+    private static readonly TimeSpan Tolerance = TimeSpan.FromSeconds(2);
+
+    private enum Relation { Same, FirstNewer, SecondNewer, Diverged }
 
     /// <summary>
     /// 16 letras hexadecimais a partir da máquina e do usuário, para não deixar o nome de ninguém visível na pasta do pen drive. É o FNV-1a de 64 bits, e não SHA-256:
@@ -30,6 +36,7 @@ public static class DataFolder
     /// A pasta a usar: ao lado do executável ou, sem poder gravar lá, <paramref name="fallback"/>. Os dados vêm de onde estiverem mais novos, entre essas duas e
     /// <paramref name="legacy"/>: a pasta em uso nunca abre vazia nem com uma cópia antiga enquanto os registros de desfazer estão em outro lugar.
     /// O que a pasta em uso tinha fica em "&lt;pasta&gt;.anterior-&lt;data&gt;", e se a cópia falhar o programa continua onde os dados estão.
+    /// Mais novo é o que a trilha de gravações (<see cref="Advance"/>) prova ter vindo depois. Duas cópias que nenhuma trilha ordena nunca se sobrescrevem em silêncio.
     /// </summary>
     /// <param name="moveLegacy">Apaga <paramref name="legacy"/> depois de copiar. Serve para a antiga pasta "dados" comum, que o próximo PC não pode adotar como se fosse dele.</param>
     /// <param name="notice">O que o usuário precisa saber, se a pasta mudou, se dados foram trocados ou se nada pode ser gravado.</param>
@@ -39,15 +46,31 @@ public static class DataFolder
         string? portable = string.IsNullOrEmpty(exeDir) ? null : Path.Combine(exeDir, "dados", identity);
         string? usable = portable != null && Writable(portable) ? portable : Writable(fallback) ? fallback : null;
 
-        string? newest = new[] { portable, fallback, legacy }.OfType<string>().Where(HasData)
-            .OrderByDescending(DataTime).ThenByDescending(d => usable != null && Same(d, usable)).FirstOrDefault();
+        // a pasta em uso vem primeiro: num empate, ela fica
+        var found = new List<string>();
+        foreach (var d in new[] { usable, portable, fallback, legacy }.OfType<string>())
+            if (HasData(d) && !found.Any(f => Same(f, d))) found.Add(d);
+
+        string? newest = null;
+        foreach (var d in found)
+        {
+            if (newest == null) { newest = d; continue; }
+            var relation = Compare(newest, d);
+            if (relation == Relation.SecondNewer || (relation == Relation.Diverged && DataTime(d) - DataTime(newest) > Tolerance)) newest = d;
+        }
+        string? other = newest == null ? null : found.FirstOrDefault(d => !Same(d, newest) && Compare(newest, d) == Relation.Diverged);
 
         if (usable == null)
         {
             notice = "Não consigo gravar na pasta do programa nem em " + fallback + ". O InfoPC abre, mas as alterações no sistema ficam bloqueadas porque não haveria como guardar o desfazer.";
             return newest ?? fallback;
         }
-        if (newest == null || Same(newest, usable)) return usable;
+        if (newest == null) return usable;
+        if (Same(newest, usable))
+        {
+            if (other != null) notice = DivergedNotice(usable, legacy != null && Same(other, legacy) ? other : SetAside(other));
+            return usable;
+        }
 
         bool replaces = HasData(usable);
         if (!Migrate(newest, usable, moveLegacy && legacy != null && Same(newest, legacy)))
@@ -55,9 +78,77 @@ public static class DataFolder
             notice = $"Não consegui copiar os dados para {usable}. O InfoPC continua usando {newest}, onde estão os registros de desfazer.";
             return newest;
         }
-        if (replaces) notice = $"Os dados mais recentes estavam em {newest} e foram copiados para {usable}. O que havia lá ficou guardado em uma pasta \".anterior\" ao lado.";
+        if (other != null) notice = DivergedNotice(newest, Same(other, usable) ? "uma pasta \".anterior\" ao lado de " + usable : legacy != null && Same(other, legacy) ? other : SetAside(other));
+        else if (replaces) notice = $"Os dados mais recentes estavam em {newest} e foram copiados para {usable}. O que havia lá ficou guardado em uma pasta \".anterior\" ao lado.";
         else if (Same(usable, fallback) && portable != null) notice = $"Não consigo mais gravar na pasta do programa. Os dados foram copiados para {usable} e continuam a partir de lá.";
         return usable;
+    }
+
+    /// <summary>
+    /// A próxima trilha de gravações: cada Save acrescenta uma marca, e uma cópia leva as marcas junto. Se a última marca de uma cópia está na trilha da outra, a outra veio depois,
+    /// sem depender do relógio nem da precisão do sistema de arquivos. Não é número de segurança, só distingue gravações.
+    /// </summary>
+    public static List<string> Advance(IEnumerable<string>? trail)
+    {
+        var next = trail?.ToList() ?? new List<string>();
+        next.Add(Random.Shared.NextInt64().ToString("x16"));
+        if (next.Count > TrailSize) next.RemoveRange(0, next.Count - TrailSize);
+        return next;
+    }
+
+    private static string DivergedNotice(string used, string kept) =>
+        $"Há duas cópias dos dados com alterações diferentes, e não dá para saber qual veio depois. O InfoPC está usando {used}; a outra cópia está em {kept}. Nada foi apagado, mas os registros de desfazer que só existem nela não aparecem aqui.";
+
+    /// <summary>Tira do caminho a cópia que não foi escolhida, para o aviso não repetir a cada abertura. Sem conseguir, ela fica onde está, e o aviso volta.</summary>
+    private static string SetAside(string dir)
+    {
+        try
+        {
+            string kept = $"{dir}{Previous}{DateTime.Now:yyyyMMdd-HHmmss}";
+            Directory.Move(dir, kept);
+            return kept;
+        }
+        catch { return dir; }
+    }
+
+    private static Relation Compare(string a, string b)
+    {
+        var (first, second) = (Trail(a), Trail(b));
+        if (first != null && second != null)
+        {
+            if (first[^1] == second[^1]) return Relation.Same;
+            if (second.Contains(first[^1])) return Relation.SecondNewer;
+            return first.Contains(second[^1]) ? Relation.FirstNewer : Relation.Diverged;
+        }
+        // sem trilha, a cópia é de uma versão anterior: quem já gravou com trilha continuou a partir dela
+        if (first != null) return Relation.FirstNewer;
+        if (second != null) return Relation.SecondNewer;
+        var gap = DataTime(a) - DataTime(b);
+        if (gap.Duration() > Tolerance) return gap > TimeSpan.Zero ? Relation.FirstNewer : Relation.SecondNewer;
+        return SameSettings(a, b) ? Relation.Same : Relation.Diverged;
+    }
+
+    private static List<string>? Trail(string dir)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(File.ReadAllBytes(Path.Combine(dir, "settings.json")));
+            if (!doc.RootElement.TryGetProperty("DataTrail", out var trail) || trail.ValueKind != JsonValueKind.Array) return null;
+            var marks = trail.EnumerateArray().Where(m => m.ValueKind == JsonValueKind.String).Select(m => m.GetString()!).ToList();
+            return marks.Count > 0 ? marks : null;
+        }
+        catch { return null; }
+    }
+
+    private static bool SameSettings(string a, string b)
+    {
+        try
+        {
+            string first = Path.Combine(a, "settings.json"), second = Path.Combine(b, "settings.json");
+            if (!File.Exists(first) || !File.Exists(second)) return File.Exists(first) == File.Exists(second);
+            return File.ReadAllBytes(first).AsSpan().SequenceEqual(File.ReadAllBytes(second));
+        }
+        catch { return false; }
     }
 
     public static bool Writable(string dir)

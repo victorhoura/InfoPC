@@ -100,6 +100,9 @@ public sealed class AppSettings
         catch { }
     }
 
+    /// <summary>Marcas das últimas gravações: mostram qual cópia dos dados veio depois (<see cref="DataFolder.Advance"/>).</summary>
+    public List<string> DataTrail { get; set; } = new();
+
     public string? HowManyFpsKeyProtected { get; set; }
 
     // Benchmark: últimos resultados (mais recente primeiro)
@@ -162,6 +165,7 @@ public sealed class AppSettings
 
     public void Save()
     {
+        DataTrail = DataFolder.Advance(DataTrail);
         Directory.CreateDirectory(Folder);
         // grava num temporário e troca no final: faltar luz no meio não pode levar os registros de desfazer
         string tmp = FilePath + ".tmp";
