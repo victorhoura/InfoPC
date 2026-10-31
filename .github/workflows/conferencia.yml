@@ -1,0 +1,203 @@
+name: Conferencia
+
+# So roda na mao. Testa o que o CI normal nao cobre, em Linux de verdade: pkexec e polkit reais, ubuntu-drivers,
+# hidepid, pen drive FAT e exFAT, janela sob GNOME e KDE (Wayland, com XWayland) e o pacote arm64 em outras distribuicoes.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: 1
+  DOTNET_NOLOGO: 1
+
+jobs:
+  root:
+    name: pkexec, ubuntu-drivers e hidepid
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Preparar
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq polkitd pkexec ubuntu-drivers-common smartmontools > /dev/null
+          sudo apt-get remove -y -qq cowsay > /dev/null || true
+          sudo systemctl start polkit || true
+          dotnet build linux/tests/InfoPC.Tests/InfoPC.Tests.csproj -c Release -v q
+          dotnet publish linux/src/InfoPC.Linux/InfoPC.Linux.csproj -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=None -o publicado -v q
+      - name: Polkit autoriza
+        env:
+          CONFERENCIA: polkit-sim
+          DISPLAY: ":99"
+        run: |
+          printf 'polkit.addRule(function(a, s) { if (a.id == "org.freedesktop.policykit.exec" && s.user == "%s") return polkit.Result.YES; });\n' "$USER" | sudo tee /etc/polkit-1/rules.d/90-conferencia.rules
+          sudo systemctl restart polkit; sleep 2
+          pkexec id -u
+          dotnet test linux/tests/InfoPC.Tests/InfoPC.Tests.csproj -c Release --no-build --filter Categoria=Conferencia --logger "console;verbosity=normal"
+          ./publicado/InfoPC --discos --smart | head -30
+      - name: Polkit recusa
+        env:
+          CONFERENCIA: polkit-nao
+          DISPLAY: ":99"
+        run: |
+          printf 'polkit.addRule(function(a, s) { if (a.id == "org.freedesktop.policykit.exec") return polkit.Result.NO; });\n' | sudo tee /etc/polkit-1/rules.d/90-conferencia.rules
+          sudo systemctl restart polkit; sleep 2
+          if pkexec id -u; then echo "pkexec deveria recusar"; exit 1; fi
+          dotnet test linux/tests/InfoPC.Tests/InfoPC.Tests.csproj -c Release --no-build --filter Categoria=Conferencia --logger "console;verbosity=normal"
+          ./publicado/InfoPC --discos --smart | head -12
+      - name: Hidepid
+        env:
+          CONFERENCIA: hidepid
+        run: |
+          sudo mount -o remount,hidepid=2 /proc
+          trap 'sudo mount -o remount,hidepid=0 /proc' EXIT
+          grep ' /proc ' /proc/mounts
+          dotnet test linux/tests/InfoPC.Tests/InfoPC.Tests.csproj -c Release --no-build --filter Categoria=Conferencia --logger "console;verbosity=normal"
+          ./publicado/InfoPC --diagnostico
+
+  pendrive:
+    name: Pen drive FAT32 e exFAT
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Testar
+        run: |
+          dotnet publish linux/src/InfoPC.Linux/InfoPC.Linux.csproj -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=None -o publicado -v q
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq dosfstools exfatprogs > /dev/null
+          for fs in vfat exfat; do
+            echo "::group::$fs"
+            truncate -s 300M "$fs.img"
+            if [ "$fs" = vfat ]; then mkfs.vfat -F 32 "$fs.img"; else mkfs.exfat "$fs.img"; fi
+            sudo mkdir -p "/mnt/$fs"
+            sudo mount -o "loop,uid=$(id -u),gid=$(id -g),umask=022" "$fs.img" "/mnt/$fs"
+            mkdir "/mnt/$fs/InfoPC"
+            cp publicado/InfoPC "/mnt/$fs/InfoPC/"
+            cd "/mnt/$fs/InfoPC"
+            test "$(./InfoPC --versao)" != ""
+            ./InfoPC --diagnostico | tee "$GITHUB_WORKSPACE/diag-$fs.txt"
+            grep -q "/mnt/$fs/InfoPC/dados/" "$GITHUB_WORKSPACE/diag-$fs.txt" || { echo "os dados deveriam ficar no pen drive"; exit 1; }
+            cd "$GITHUB_WORKSPACE"
+            ls -laR "/mnt/$fs/InfoPC" | head -20
+            echo "--- somente leitura: os dados vao para a pasta do usuario"
+            sudo mount -o remount,ro "/mnt/$fs"
+            (cd "/mnt/$fs/InfoPC" && ./InfoPC --diagnostico) | tee "diag-$fs-ro.txt"
+            grep -q "\.local/share/InfoPC" "diag-$fs-ro.txt" || { echo "sem gravar no pen drive, deveria usar a pasta do usuario"; exit 1; }
+            sudo umount "/mnt/$fs"
+            echo "::endgroup::"
+          done
+
+  janela:
+    name: Janela em ${{ matrix.desktop }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        desktop: [gnome, kde]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Compilar e instalar o ambiente
+        run: |
+          dotnet publish linux/src/InfoPC.Linux/InfoPC.Linux.csproj -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=None -o publicado -v q
+          sudo apt-get update -qq
+          if [ "${{ matrix.desktop }}" = gnome ]; then pacotes="gnome-shell"; else pacotes="kwin-wayland kwin-wayland-backend-virtual"; fi
+          sudo apt-get install -y -qq --no-install-recommends $pacotes xwayland dbus-x11 xdotool imagemagick x11-utils libice6 libsm6 libx11-6 fontconfig fonts-dejavu-core > /dev/null || sudo apt-get install -y -qq --no-install-recommends $pacotes xwayland dbus-x11 xdotool imagemagick x11-utils libice6 libsm6 libx11-6 fontconfig fonts-dejavu-core
+      - name: Abrir a janela
+        env:
+          DESKTOP: ${{ matrix.desktop }}
+        run: |
+          export XDG_RUNTIME_DIR=/tmp/xdg-conferencia; mkdir -m 700 -p "$XDG_RUNTIME_DIR"
+          cat > sessao.sh <<'EOF'
+          set -x
+          if [ "$DESKTOP" = gnome ]; then
+            export XDG_SESSION_TYPE=wayland XDG_CURRENT_DESKTOP=GNOME
+            gnome-shell --wayland --headless --virtual-monitor 1280x800 --no-x11=false > shell.log 2>&1 &
+          else
+            export XDG_SESSION_TYPE=wayland XDG_CURRENT_DESKTOP=KDE
+            kwin_wayland --virtual --xwayland --no-lockscreen --width 1280 --height 800 > shell.log 2>&1 &
+          fi
+          shell=$!
+          for i in $(seq 1 60); do [ -S "$XDG_RUNTIME_DIR/wayland-0" ] && break; sleep 1; done
+          sleep 10
+          ls -la "$XDG_RUNTIME_DIR" /tmp/.X11-unix || true
+          kill -0 "$shell" || { echo "o compositor nao ficou de pe"; cat shell.log; exit 1; }
+          export WAYLAND_DISPLAY=wayland-0
+          n=$(ls /tmp/.X11-unix | sed 's/^X//' | sort -n | tail -1); export DISPLAY=":$n"
+          a=$(ls "$XDG_RUNTIME_DIR"/.mutter-Xwaylandauth.* "$XDG_RUNTIME_DIR"/xauth_* 2>/dev/null | head -1); [ -n "$a" ] && export XAUTHORITY="$a"
+          [ -n "$XAUTHORITY" ] || a=$(ls /tmp/xauth* 2>/dev/null | head -1); [ -n "$a" ] && export XAUTHORITY="$a"
+          echo "DISPLAY=$DISPLAY XAUTHORITY=$XAUTHORITY"
+          ./publicado/InfoPC --diagnostico | head -8
+          ./publicado/InfoPC > app.log 2>&1 &
+          app=$!
+          sleep 30
+          kill -0 "$app" || { echo "o programa fechou"; cat app.log; exit 1; }
+          id=$(xdotool search --onlyvisible --name '^InfoPC' | head -1)
+          echo "janela: $id"; [ -n "$id" ] || { xwininfo -root -tree | head -30; cat app.log; exit 1; }
+          xwininfo -id "$id" | grep -E 'Width|Height|xwininfo'
+          import -window "$id" "tela-$DESKTOP.png"
+          kill "$app"; wait "$app" 2>/dev/null
+          kill "$shell"
+          exit 0
+          EOF
+          dbus-run-session -- bash sessao.sh
+      - name: Sem XWayland
+        if: matrix.desktop == 'kde'
+        run: |
+          export XDG_RUNTIME_DIR=/tmp/xdg-sem-x; mkdir -m 700 -p "$XDG_RUNTIME_DIR"
+          dbus-run-session -- bash -c '
+            kwin_wayland --virtual --no-lockscreen --width 1280 --height 800 > shell2.log 2>&1 & s=$!
+            for i in $(seq 1 60); do [ -S "$XDG_RUNTIME_DIR/wayland-0" ] && break; sleep 1; done; sleep 5
+            export WAYLAND_DISPLAY=wayland-0; unset DISPLAY
+            timeout 20 ./publicado/InfoPC; echo "codigo sem XWayland: $?"
+            kill $s
+          ' || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tela-${{ matrix.desktop }}
+          path: |
+            tela-*.png
+            shell*.log
+            app.log
+          retention-days: 7
+          if-no-files-found: warn
+
+  arm64:
+    name: Pacote arm64 em ${{ matrix.imagem }}
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        imagem: ['debian:12', 'fedora:41', 'opensuse/tumbleweed:latest']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Testar em conteiner limpo
+        run: |
+          dotnet publish linux/src/InfoPC.Linux/InfoPC.Linux.csproj -c Release -r linux-arm64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=None -o publicado -v q
+          docker run --rm -v "$PWD/publicado:/p:ro" "${{ matrix.imagem }}" sh -c '
+            set -ex
+            if command -v zypper > /dev/null; then zypper --non-interactive install libopenssl3 libstdc++6; fi
+            mkdir /tmp/InfoPC && cp /p/InfoPC /tmp/InfoPC/ && cd /tmp/InfoPC
+            uname -m
+            ./InfoPC --versao
+            ./InfoPC --diagnostico
+            ./InfoPC --info | head -12
+            ./InfoPC --json > /tmp/r.json && test -s /tmp/r.json
+          '
