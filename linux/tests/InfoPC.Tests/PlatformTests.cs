@@ -532,6 +532,145 @@ public sealed class DataFolderTests : IDisposable
         Assert.Equal(new[] { "com-trilha" }, LoadGroups(Target));
     }
 
+    /// <summary>Grava continuando a partir de <paramref name="parent"/>, para montar linhagens e ramificações pelo Save real.</summary>
+    private AppSettings SaveFrom(AppSettings? parent, string folder, IEnumerable<string> groups, DateTime when)
+    {
+        string before = AppSettings.Folder;
+        try
+        {
+            AppSettings.Folder = folder;
+            var s = parent == null ? new AppSettings() : System.Text.Json.JsonSerializer.Deserialize<AppSettings>(System.Text.Json.JsonSerializer.Serialize(parent))!;
+            s.GroupsAdded = groups.ToList();
+            s.Save();
+            File.SetLastWriteTimeUtc(Path.Combine(folder, "settings.json"), when);
+            return s;
+        }
+        finally { AppSettings.Folder = before; }
+    }
+
+    private static FileStream Hold(string folder) => new(Path.Combine(folder, "settings.json"), FileMode.Open, FileAccess.Read, FileShare.None);
+
+    [Fact]
+    public void A_later_copy_that_cannot_be_read_now_is_not_taken_for_an_old_version()
+    {
+        // R14-D: a posterior está presa por outro programa
+        var first = SaveFrom(null, Target, new[] { "dialout" }, Old);
+        SaveFrom(first, Fallback, new[] { "dialout", "uucp" }, Old);
+        using (Hold(Fallback))
+        {
+            Assert.Equal(Target, Resolve(out var notice));
+            Assert.Contains("Não consegui ler", notice);
+            Assert.Contains(Fallback, notice);
+        }
+        Assert.Equal(new[] { "dialout", "uucp" }, LoadGroups(Fallback));
+        Assert.Empty(Directory.GetDirectories(_root, "fallback.anterior-*"));
+
+        // liberado, a posterior é reconhecida
+        Assert.Equal(Target, Resolve(out var later));
+        Assert.Equal(new[] { "dialout", "uucp" }, LoadGroups(Target));
+        Assert.Contains("mais recentes", later);
+    }
+
+    [Fact]
+    public void A_later_portable_copy_that_cannot_be_read_is_not_replaced_by_the_fallback()
+    {
+        var first = SaveFrom(null, Fallback, new[] { "dialout" }, Old);
+        SaveFrom(first, Target, new[] { "dialout", "uucp" }, Old);
+        using (BlockWrites())
+        using (Hold(Target))
+        {
+            Assert.Equal(Fallback, Resolve(out var notice));
+            Assert.Contains("Não consegui ler", notice);
+            Assert.Contains(Target, notice);
+        }
+        Assert.Equal(new[] { "dialout", "uucp" }, LoadGroups(Target));
+        Assert.Equal(new[] { "dialout" }, LoadGroups(Fallback));
+    }
+
+    [Fact]
+    public void Unreadable_copy_with_nowhere_to_write_still_warns_about_both()
+    {
+        var first = SaveFrom(null, Target, new[] { "dialout" }, Old);
+        SaveFrom(first, Fallback, new[] { "dialout", "uucp" }, Old);
+        using (BlockWrites())
+        using (new FileStream(Path.Combine(Fallback, ".gravavel-" + Environment.ProcessId), FileMode.Create, FileAccess.Write, FileShare.None))
+        using (Hold(Fallback))
+        {
+            Assert.Equal(Target, Resolve(out var notice));
+            Assert.Contains("bloqueadas", notice);
+            Assert.Contains("Não consegui ler", notice);
+        }
+    }
+
+    [Fact]
+    public void Settings_held_while_opening_are_not_lost_by_the_next_save()
+    {
+        var saved = SaveFrom(null, Target, new[] { "dialout" }, Old);
+        string before = AppSettings.Folder;
+        try
+        {
+            AppSettings.Folder = Target;
+            AppSettings loaded;
+            using (Hold(Target)) loaded = AppSettings.Load();
+            Assert.Empty(loaded.GroupsAdded);
+            Assert.NotNull(loaded.LoadError);
+            loaded.Save();
+            Assert.Contains("dialout", File.ReadAllText(Path.Combine(Target, "settings.json.corrompido")));
+        }
+        finally { AppSettings.Folder = before; }
+    }
+
+    [Fact]
+    public void A_copy_proven_older_never_wins_between_two_branches()
+    {
+        // R14-E: a antiga pasta "dados" é ancestral da portátil, e o fallback é outra ramificação; ela tem a data maior e, ainda assim, não pode ganhar
+        string legacy = Path.Combine(Exe, "dados");
+        var root = SaveFrom(null, Path.Combine(_root, "semente"), new[] { "base" }, Old);
+        var ancestor = SaveFrom(root, legacy, new[] { "dialout" }, Old.AddSeconds(20));
+        SaveFrom(ancestor, Target, new[] { "dialout", "uucp" }, Old);
+        SaveFrom(root, Fallback, new[] { "plugdev" }, Old.AddSeconds(10));
+
+        Assert.Equal(Target, Resolve(out var notice, legacy, true));
+
+        // entre as duas pontas, a de data claramente maior; a outra fica guardada, e o aviso diz onde
+        Assert.Equal(new[] { "plugdev" }, LoadGroups(Target));
+        string kept = Assert.Single(Directory.GetDirectories(legacy, Me + ".anterior-*"));
+        Assert.Equal(new[] { "dialout", "uucp" }, LoadGroups(kept));
+        Assert.Contains("usando " + Target, notice);
+        Assert.Contains(kept, notice);
+        Assert.Contains("dialout", Read(legacy));
+    }
+
+    [Fact]
+    public void Three_copies_of_one_line_pick_the_tip_in_any_position_without_a_divergence_notice()
+    {
+        string legacy = Path.Combine(Exe, "dados");
+        var orders = new[] { new[] { Target, Fallback, legacy }, new[] { legacy, Fallback, Target }, new[] { Fallback, legacy, Target } };
+        foreach (var order in orders)
+        {
+            foreach (var d in new[] { Target, Fallback }) if (Directory.Exists(d)) Directory.Delete(d, true);
+            if (File.Exists(Path.Combine(legacy, "settings.json"))) File.Delete(Path.Combine(legacy, "settings.json"));
+            AppSettings? last = null;
+            for (int i = 0; i < 3; i++) last = SaveFrom(last, order[i], Enumerable.Range(0, i + 1).Select(n => "g" + n), Old);
+
+            Assert.Equal(Target, Resolve(out var notice, legacy, true));
+            Assert.Equal(new[] { "g0", "g1", "g2" }, LoadGroups(Target));
+            Assert.DoesNotContain("alterações diferentes", notice ?? "");
+        }
+    }
+
+    [Fact]
+    public void A_damaged_copy_loses_to_one_with_a_trail_and_the_user_is_told()
+    {
+        SaveReal(Target, new[] { "bom" }, Old);
+        Put("fallback/settings.json", "{ quebrado", Newest);
+
+        Assert.Equal(Target, Resolve(out var notice));
+        Assert.Equal(new[] { "bom" }, LoadGroups(Target));
+        Assert.Contains("danificadas", notice);
+        Assert.Contains("{ quebrado", Read(Assert.Single(Directory.GetDirectories(_root, "fallback.anterior-*"))));
+    }
+
     [Fact]
     public void The_trail_stays_small_and_each_save_adds_a_new_mark()
     {

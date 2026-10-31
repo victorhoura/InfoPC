@@ -107,6 +107,7 @@ public sealed class AppSettings
     public bool DeviceToasts { get; set; } = true;
 
     [JsonIgnore] public string? LoadError { get; private set; }
+    private bool _unreadOnLoad;
 
     private static readonly JsonSerializerOptions Json = new() { WriteIndented = true };
 
@@ -120,13 +121,15 @@ public sealed class AppSettings
         catch (Exception ex)
         {
             DataFolder.KeepUnreadable(FilePath);
-            return new AppSettings { LoadError = ex.Message };
+            return new AppSettings { LoadError = ex.Message, _unreadOnLoad = true };
         }
         return new AppSettings();
     }
 
     public void Save()
     {
+        // o arquivo que não deu para ler ao abrir pode só ter estado preso: a cópia dele sai antes de ser substituído
+        if (_unreadOnLoad) { DataFolder.KeepUnreadable(FilePath); _unreadOnLoad = false; }
         DataTrail = DataFolder.Advance(DataTrail);
         Directory.CreateDirectory(Folder);
         if (!OperatingSystem.IsWindows())

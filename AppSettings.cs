@@ -159,12 +159,20 @@ public sealed class AppSettings
             if (File.Exists(FilePath))
                 return JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(FilePath)) ?? new AppSettings();
         }
-        catch { DataFolder.KeepUnreadable(FilePath); }
+        catch
+        {
+            DataFolder.KeepUnreadable(FilePath);
+            return new AppSettings { _unreadOnLoad = true };
+        }
         return new AppSettings();
     }
 
+    private bool _unreadOnLoad;
+
     public void Save()
     {
+        // o arquivo que não deu para ler ao abrir pode só ter estado preso: a cópia dele sai antes de ser substituído
+        if (_unreadOnLoad) { DataFolder.KeepUnreadable(FilePath); _unreadOnLoad = false; }
         DataTrail = DataFolder.Advance(DataTrail);
         Directory.CreateDirectory(Folder);
         // grava num temporário e troca no final: faltar luz no meio não pode levar os registros de desfazer

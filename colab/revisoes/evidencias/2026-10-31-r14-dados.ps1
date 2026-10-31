@@ -1,6 +1,6 @@
 # Reproducoes da revisao R14-C / v1.1.3. Nao executa o InfoPC.exe.
 # So grava arquivos descartaveis em obj/review do worktree atual.
-# Saida 0 confirma as observacoes registradas, inclusive os defeitos; nao aprova o produto.
+# Saida 0 confirma as observacoes registradas; R14-D/E agora conferem a correcao (claude). Nao aprova o produto.
 $ErrorActionPreference = 'Stop'
 $repo = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..\..'))
 $reviewDir = Join-Path $repo 'obj\review\r14-data'
@@ -147,8 +147,8 @@ foreach (var order in new[] { new[] { 0, 1, 2 }, new[] { 0, 2, 1 }, new[] { 1, 0
     using (var locked = new FileStream(Path.Combine(c.F, "settings.json"), FileMode.Open, FileAccess.Read, FileShare.None))
     {
         chosen = c.Resolve(out notice);
-        Check(chosen == c.P && c.Groups(chosen) == "dialout" && notice == null, "locked settings reproduction changed");
-        Log("BUG-locked-settings", new { groups = c.Groups(chosen), notice });
+        Check(chosen == c.P && c.Groups(chosen) == "dialout" && notice!.Contains("N\u00e3o consegui ler"), "locked settings must warn");
+        Log("locked-settings", new { groups = c.Groups(chosen), notice });
     }
     Check(c.Groups(c.F) == "dialout,uucp", "locked source was modified");
 }
@@ -161,8 +161,8 @@ foreach (var order in new[] { new[] { 0, 1, 2 }, new[] { 0, 2, 1 }, new[] { 1, 0
     using var probe = c.Block(c.P);
     using var locked = new FileStream(Path.Combine(c.P, "settings.json"), FileMode.Open, FileAccess.Read, FileShare.None);
     string chosen = c.Resolve(out var notice);
-    Check(chosen == c.F && c.Groups(chosen) == "dialout" && notice == null, "locked portable reproduction changed");
-    Log("BUG-locked-portable-settings", new { groups = c.Groups(chosen), notice });
+    Check(chosen == c.F && c.Groups(chosen) == "dialout" && notice!.Contains("N\u00e3o consegui ler"), "locked portable must warn");
+    Log("locked-portable-settings", new { groups = c.Groups(chosen), notice });
 }
 // Mais de 256 gravacoes perdem a prova de parentesco, mas devem avisar.
 {
@@ -180,8 +180,9 @@ foreach (var order in new[] { new[] { 0, 1, 2 }, new[] { 0, 2, 1 }, new[] { 1, 0
     c.Save(c.P, new[] { "dialout", "uucp" }, t, ancestor);
     c.Save(c.F, new[] { "plugdev" }, t.AddSeconds(10), basis);
     string chosen = c.Resolve(out var notice, true, true);
-    Check(c.Groups(chosen) == "dialout", "dominated-three reproduction changed");
-    Log("BUG-dominated-three", new { groups = c.Groups(chosen), notice, portableArchives = Directory.GetDirectories(c.L, "0123456789abcdef.anterior-*").Select(c.Groups).ToArray(), fallbackArchives = Directory.GetDirectories(c.Root, "fallback.anterior-*").Select(c.Groups).ToArray() });
+    var keptPortable = Directory.GetDirectories(c.L, "0123456789abcdef.anterior-*").Single();
+    Check(chosen == c.P && c.Groups(chosen) == "plugdev" && c.Groups(keptPortable) == "dialout,uucp" && notice!.Contains("usando " + c.P) && notice.Contains(keptPortable), "ancestor must not win");
+    Log("dominated-three", new { groups = c.Groups(chosen), notice, portableArchives = Directory.GetDirectories(c.L, "0123456789abcdef.anterior-*").Select(c.Groups).ToArray(), fallbackArchives = Directory.GetDirectories(c.Root, "fallback.anterior-*").Select(c.Groups).ToArray() });
 }
 Console.WriteLine($"CHECKS={checks}; ROOT={root}");
 

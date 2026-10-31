@@ -18,6 +18,7 @@ public static class DataFolder
     private static readonly TimeSpan Tolerance = TimeSpan.FromSeconds(2);
 
     private enum Relation { Same, FirstNewer, SecondNewer, Diverged }
+    private enum TrailState { None, Present, Corrupt, Unreadable }
 
     /// <summary>
     /// 16 letras hexadecimais a partir da máquina e do usuário, para não deixar o nome de ninguém visível na pasta do pen drive. É o FNV-1a de 64 bits, e não SHA-256:
@@ -51,37 +52,58 @@ public static class DataFolder
         foreach (var d in new[] { usable, portable, fallback, legacy }.OfType<string>())
             if (HasData(d) && !found.Any(f => Same(f, d))) found.Add(d);
 
-        string? newest = null;
-        foreach (var d in found)
-        {
-            if (newest == null) { newest = d; continue; }
-            var relation = Compare(newest, d);
-            if (relation == Relation.SecondNewer || (relation == Relation.Diverged && DataTime(d) - DataTime(newest) > Tolerance)) newest = d;
-        }
-        string? other = newest == null ? null : found.FirstOrDefault(d => !Same(d, newest) && Compare(newest, d) == Relation.Diverged);
+        // arquivo em uso não é versão anterior: sem ler, não dá para comparar, e nenhuma cópia é trocada
+        var unread = found.Where(d => !CanRead(d)).ToList();
+        string? newest = Latest(found.Except(unread).ToList(), out var others);
 
         if (usable == null)
         {
             notice = "Não consigo gravar na pasta do programa nem em " + fallback + ". O InfoPC abre, mas as alterações no sistema ficam bloqueadas porque não haveria como guardar o desfazer.";
-            return newest ?? fallback;
+            if (unread.Count > 0) notice += " " + UnreadNotice(unread, newest ?? unread[0]);
+            return newest ?? unread.FirstOrDefault() ?? fallback;
+        }
+        if (unread.Count > 0)
+        {
+            notice = UnreadNotice(unread, usable);
+            return usable;
         }
         if (newest == null) return usable;
+
+        bool isLegacy(string d) => legacy != null && Same(d, legacy);
         if (Same(newest, usable))
         {
-            if (other != null) notice = DivergedNotice(usable, legacy != null && Same(other, legacy) ? other : SetAside(other));
+            if (others.Count > 0) notice = DivergedNotice(usable, others.Select(o => isLegacy(o) ? o : SetAside(o)));
             return usable;
         }
 
         bool replaces = HasData(usable);
-        if (!Migrate(newest, usable, moveLegacy && legacy != null && Same(newest, legacy)))
+        if (!Migrate(newest, usable, moveLegacy && isLegacy(newest), out string? archived))
         {
             notice = $"Não consegui copiar os dados para {usable}. O InfoPC continua usando {newest}, onde estão os registros de desfazer.";
             return newest;
         }
-        if (other != null) notice = DivergedNotice(newest, Same(other, usable) ? "uma pasta \".anterior\" ao lado de " + usable : legacy != null && Same(other, legacy) ? other : SetAside(other));
+        if (others.Count > 0) notice = DivergedNotice(usable, others.Select(o => Same(o, usable) ? archived ?? o : isLegacy(o) ? o : SetAside(o)));
         else if (replaces) notice = $"Os dados mais recentes estavam em {newest} e foram copiados para {usable}. O que havia lá ficou guardado em uma pasta \".anterior\" ao lado.";
         else if (Same(usable, fallback) && portable != null) notice = $"Não consigo mais gravar na pasta do programa. Os dados foram copiados para {usable} e continuam a partir de lá.";
         return usable;
+    }
+
+    /// <summary>
+    /// A cópia a usar: só disputam as que nenhuma outra prova serem anteriores, para uma ancestral nunca voltar a ganhar. Entre as que sobram, vale a data claramente maior;
+    /// sem isso, a primeira, que é a pasta em uso. <paramref name="others"/> são as cópias que não dá para ordenar, ou danificadas, e não foram escolhidas.
+    /// </summary>
+    private static string? Latest(List<string> found, out List<string> others)
+    {
+        others = new List<string>();
+        var tips = found.Where(d => !found.Any(o => !Same(o, d) && Compare(o, d) == Relation.FirstNewer)).ToList();
+        string? latest = tips.FirstOrDefault() ?? found.FirstOrDefault();
+        if (latest == null) return null;
+        foreach (var d in tips.Skip(1))
+            if (Compare(latest, d) == Relation.Diverged && DataTime(d) - DataTime(latest) > Tolerance) latest = d;
+        string chosen = latest;
+        bool proven = ReadTrail(chosen, out _) == TrailState.Present;
+        others = found.Where(d => !Same(d, chosen) && (Compare(chosen, d) == Relation.Diverged || (proven && ReadTrail(d, out _) == TrailState.Corrupt))).ToList();
+        return chosen;
     }
 
     /// <summary>
@@ -96,8 +118,11 @@ public static class DataFolder
         return next;
     }
 
-    private static string DivergedNotice(string used, string kept) =>
-        $"Há duas cópias dos dados com alterações diferentes, e não dá para saber qual veio depois. O InfoPC está usando {used}; a outra cópia está em {kept}. Nada foi apagado, mas os registros de desfazer que só existem nela não aparecem aqui.";
+    private static string DivergedNotice(string used, IEnumerable<string> kept) =>
+        $"Há cópias dos dados com alterações diferentes, ou danificadas, e não dá para saber qual veio depois. O InfoPC está usando {used}; o restante está em {string.Join(" e ", kept)}. Nada foi apagado, mas os registros de desfazer que só existem lá não aparecem aqui.";
+
+    private static string UnreadNotice(IEnumerable<string> unread, string used) =>
+        $"Não consegui ler os dados em {string.Join(" e ", unread)}: o arquivo pode estar em uso por outro programa. O InfoPC está usando {used} e não trocou nenhuma cópia, mas os registros de desfazer que só existem lá podem não aparecer aqui. Feche o outro programa e abra o InfoPC de novo.";
 
     /// <summary>Tira do caminho a cópia que não foi escolhida, para o aviso não repetir a cada abertura. Sem conseguir, ela fica onde está, e o aviso volta.</summary>
     private static string SetAside(string dir)
@@ -128,16 +153,34 @@ public static class DataFolder
         return SameSettings(a, b) ? Relation.Same : Relation.Diverged;
     }
 
-    private static List<string>? Trail(string dir)
+    private static List<string>? Trail(string dir) => ReadTrail(dir, out var marks) == TrailState.Present ? marks : null;
+
+    /// <summary>Sem trilha (versão anterior), com trilha, danificado ou impossível de ler agora: as respostas são diferentes, e confundi-las esconderia o desfazer.</summary>
+    private static TrailState ReadTrail(string dir, out List<string>? marks)
     {
+        marks = null;
+        string settings = Path.Combine(dir, "settings.json");
         try
         {
-            using var doc = JsonDocument.Parse(File.ReadAllBytes(Path.Combine(dir, "settings.json")));
-            if (!doc.RootElement.TryGetProperty("DataTrail", out var trail) || trail.ValueKind != JsonValueKind.Array) return null;
-            var marks = trail.EnumerateArray().Where(m => m.ValueKind == JsonValueKind.String).Select(m => m.GetString()!).ToList();
-            return marks.Count > 0 ? marks : null;
+            if (!File.Exists(settings)) return TrailState.None;
+            using var doc = JsonDocument.Parse(File.ReadAllBytes(settings));
+            if (doc.RootElement.ValueKind != JsonValueKind.Object || !doc.RootElement.TryGetProperty("DataTrail", out var trail) || trail.ValueKind != JsonValueKind.Array) return TrailState.None;
+            marks = trail.EnumerateArray().Where(m => m.ValueKind == JsonValueKind.String).Select(m => m.GetString()!).ToList();
+            return marks.Count > 0 ? TrailState.Present : TrailState.None;
         }
-        catch { return null; }
+        catch (JsonException) { return TrailState.Corrupt; }
+        catch { return TrailState.Unreadable; }
+    }
+
+    /// <summary>Tenta algumas vezes: um antivírus costuma prender o arquivo só por um instante.</summary>
+    private static bool CanRead(string dir)
+    {
+        for (int i = 0; i < 3; i++)
+        {
+            if (ReadTrail(dir, out _) != TrailState.Unreadable) return true;
+            if (i < 2) Thread.Sleep(100);
+        }
+        return false;
     }
 
     private static bool SameSettings(string a, string b)
@@ -178,7 +221,7 @@ public static class DataFolder
     private static bool HasData(string dir)
     {
         try { return Directory.Exists(dir) && Entries(dir).Any(); }
-        catch { return false; }
+        catch { return true; } // existe, mas não deu para listar: não é o mesmo que estar vazia
     }
 
     /// <summary>Quando os dados mudaram por último. O Save sempre grava o settings.json; sem ele, vale o arquivo mais novo.</summary>
@@ -195,8 +238,9 @@ public static class DataFolder
     }
 
     /// <summary>Copia para uma pasta temporária e só então troca o nome: uma cópia interrompida nunca parece a pasta de dados. File.Copy mantém a data, então abrir de novo não copia outra vez.</summary>
-    private static bool Migrate(string source, string target, bool moveSource)
+    private static bool Migrate(string source, string target, bool moveSource, out string? archived)
     {
+        archived = null;
         string partial = target + Partial;
         try
         {
@@ -209,7 +253,11 @@ public static class DataFolder
                 if (Directory.Exists(e)) CopyTree(e, to);
                 else File.Copy(e, to);
             }
-            if (HasData(target)) Directory.Move(target, $"{target}{Previous}{DateTime.Now:yyyyMMdd-HHmmss}");
+            if (HasData(target))
+            {
+                archived = $"{target}{Previous}{DateTime.Now:yyyyMMdd-HHmmss}";
+                Directory.Move(target, archived);
+            }
             else Directory.Delete(target, true);
             Directory.Move(partial, target);
             if (moveSource)
@@ -231,7 +279,7 @@ public static class DataFolder
         foreach (var d in Directory.GetDirectories(from)) CopyTree(d, Path.Combine(to, Path.GetFileName(d)));
     }
 
-    /// <summary>Guarda um settings.json que não deu para ler. O próximo Save o sobrescreveria, com todos os registros de desfazer dele.</summary>
+    /// <summary>Guarda um settings.json que não deu para ler. O próximo Save o sobrescreveria, com todos os registros de desfazer dele. Preso por outro programa, a cópia falha, e o Save tenta de novo.</summary>
     public static void KeepUnreadable(string settingsFile)
     {
         try { File.Copy(settingsFile, settingsFile + ".corrompido", true); } catch { }
