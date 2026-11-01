@@ -43,7 +43,11 @@ Suíte final repetida após o ajuste de inicialização: **277 testes passaram, 
 
 A tentativa inicial `41349512015` em `56f08c6` foi bloqueada nos dois pacotes Linux: o novo diagnóstico acessava o dispatcher antes de existir plataforma. O probe em processo separado reproduziu `SupportsRunLoops == false`; a inscrição de UI foi movida para `OnFrameworkInitializationCompleted`. `InfoPC.StartupProbe` passou depois da correção e agora é exigido pelo CI. O rascunho falho não foi publicado. A suíte headless comum, que já monta a plataforma antes dos testes, não cobria essa ordem de entrada.
 
-Push e Release 1.1.8 serão executados depois da integração e conferidos por jobs, hashes e pacotes; a evidência final entra em nova entrega documental. Não há website ou serviço online a implantar. O repositório é público e a história privada continua só local; push exclusivamente de main.
+Código integrado e enviado em `56f08c6` e `58f82a3`; SHA remoto conferido. [Release v1.1.8](https://github.com/victorhoura/InfoPC/releases/tag/v1.1.8) publicada como pré-lançamento, tag em `58f82a30af1e2d6b6ab7740c2efd4fe26705c9a7`. [Linux 41350090896](https://github.com/victorhoura/InfoPC/actions/runs/41350090896) e [Publicar 41350094350](https://github.com/victorhoura/InfoPC/actions/runs/41350094350) concluídos com sucesso: 277 testes em cada Ubuntu (22.04/24.04), probe, cinco gerenciadores reais, binários x64/arm64 abertos por 25 s em Xvfb e Windows aberto por 40 s. Pacote x64 também roda em cinco distribuições. Captura arm64 inspecionada: janela renderizada com dados e versão 1.1.8.
+
+Três pacotes baixados: SHA-256 igual ao manifesto, executáveis ELF x64/arm64 e PE x64, quatro arquivos esperados com licenças. Página pública e download x64 responderam HTTP 200 sem login. Hashes completos em `docs/LINUX-ESTABILIDADE.md`. Não há banco/migração, website ou serviço a implantar. História privada mantida só local; push apenas de main.
+
+Obsidian é a última etapa desta sessão: atualizar a nota do projeto e criar a nota substantiva de estabilidade/publicação em `Trabalho/Programação/Projetos/InfoPC`, preservando o estado histórico. A conclusão dessa escrita será conferida no próprio cofre.
 
 Revisão técnica auxiliar somente leitura encontrou os cuidados de Tick/fechamento/snapshot e confirmou o diff corrigido, sem bloqueador remanescente demonstrado; sem build/testes pelo auxiliar. **Não substitui a revisão cruzada do claude.**
 

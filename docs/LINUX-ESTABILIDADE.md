@@ -52,3 +52,21 @@ Os testes vermelhos acima foram executados contra os caminhos defeituosos antes 
 Comandos finais, contagens, hashes, workflows e publicação ficam em `colab/HANDOFF.md` e `colab/LOG.md`. A análise auxiliar não equivale à revisão cruzada: a entrega do codex aguarda o claude. Não há banco de dados, migração, website nem serviço online a implantar; a publicação correspondente é a Release com os executáveis portáteis.
 
 Referência da implementação de dispatcher usada pelo projeto: [Avalonia 11.3.22 — DispatcherOperation](https://github.com/AvaloniaUI/Avalonia/blob/11.3.22/src/Avalonia.Base/Threading/DispatcherOperation.cs). Documentação de apoio: [thread da interface na Avalonia 11](https://v11.docs.avaloniaui.net/docs/guides/development-guides/accessing-the-ui-thread/).
+
+## Resultado verificado em 01/11/2026
+
+- Código em `58f82a30af1e2d6b6ab7740c2efd4fe26705c9a7`, integrado à main e conferido no remoto. Versão 1.1.8. Nenhuma publicação anterior foi reescrita.
+- Windows local: 0 erros, 16 avisos conhecidos. Linux no Windows: 277 testes, 0 falhas, 1 min 53 s depois da correção do diagnóstico; probe em processo separado passou. Os testes de UI fazem duas passagens pelas 21 páginas em cada fixture, além das regressões específicas.
+- [Linux 41350090896](https://github.com/victorhoura/InfoPC/actions/runs/41350090896): sucesso. 277 testes e probe em cada Ubuntu 22.04/24.04; cinco gerenciadores reais passaram (Debian, Ubuntu, Fedora, Arch, openSUSE).
+- [Publicar 41350094350](https://github.com/victorhoura/InfoPC/actions/runs/41350094350): sucesso. Binários Linux x64 e arm64 abertos por 25 s em Xvfb; captura arm64 inspecionada, janela com versão e leituras. Executável Windows aberto por 40 s no runner, título InfoPC, 185 MB. Pacote Linux x64 também conferido em cinco distribuições pelo modo texto.
+- [Release v1.1.8](https://github.com/victorhoura/InfoPC/releases/tag/v1.1.8) pública, sem rascunho, marcada como pré-lançamento; tag aponta para o código acima. Página e download x64 retornaram HTTP 200 sem login. A confirmação no hardware do usuário e a revisão cruzada do claude continuam pendentes.
+
+Pacotes baixados e conferidos contra [SHA256SUMS.txt da Release](https://github.com/victorhoura/InfoPC/releases/download/v1.1.8/SHA256SUMS.txt); cada pacote contém o executável portátil e LEIA-ME/LICENSE/THIRD-PARTY-NOTICES. Arquitetura conferida pelos cabeçalhos ELF/PE, sem executar os pacotes Linux neste Windows.
+
+| Pacote | Bytes | SHA-256 |
+|---|---:|---|
+| Linux x64 | 38.505.772 | `6e1468e0d2c21463bb10b7c4e9f09ab4beaa615c157aa988c99610da40c3ce05` |
+| Linux arm64 | 36.750.679 | `24f8f727dd7815b0ae62ec938addf8b058cea61a8967e954a6a13fac71b61f81` |
+| Windows x64 | 81.028.177 | `70f2c6c21504077efa04f3c90d0168c03907ae5fd989c841f376585a0eaaf448` |
+
+Sem alteração de banco ou migração. Não existe website do produto. Os registros detalham a tentativa bloqueada e as verificações efetivamente realizadas; não demonstram ausência universal de falhas de hardware, driver ou memória em outros computadores.

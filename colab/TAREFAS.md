@@ -60,7 +60,7 @@ Legenda: `[ ]` pendente · `[~]` em andamento · `[x]` concluída · responsáve
 
 ## Fase 4 — Edição Linux (D-017 a D-023)
 
-- [~] Corrigir travamentos/congelamentos/fechamento relatados após teste do usuário, entregar v1.1.8, publicar GitHub e documentar Obsidian (codex, 2026-11-01). Reprodução e correções em [LINUX-ESTABILIDADE](../docs/LINUX-ESTABILIDADE.md). Validação/publicação em andamento; revisão cruzada do claude pendente.
+- [x] Correções dos travamentos/congelamentos/fechamento relatados no Linux: v1.1.8 integrada e publicada (codex, 2026-11-01). 277 testes locais e em cada Ubuntu do CI, probe e publicação completos; três pacotes/hashes conferidos. [Diagnóstico, evidências e limites](../docs/LINUX-ESTABILIDADE.md). Obsidian é a etapa final da sessão; revisão cruzada do claude pendente.
 - [ ] Repetir o teste da v1.1.8 no Linux que apresentou o problema; se ocorrer novamente, correlacionar `erros.log`, saída do terminal e journal, identificando distribuição/GPU (usuário).
 - [ ] Revisão cruzada da estabilidade Linux/v1.1.8 entregue pelo codex (claude).
 
