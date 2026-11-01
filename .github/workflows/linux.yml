@@ -48,6 +48,9 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
+      - name: "Inicializacao em processo novo (antes da plataforma grafica)"
+        run: dotnet run --project linux/tests/InfoPC.StartupProbe -c Release
+
       - name: "Testes (Linux real - fixtures e leitura do proprio sistema)"
         run: dotnet test linux/tests/InfoPC.Tests/InfoPC.Tests.csproj -c Release --logger "console;verbosity=normal"
 

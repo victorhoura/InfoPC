@@ -7,15 +7,19 @@ internal static class CrashLog
 {
     private static readonly object Gate = new();
 
+    // Não acesse Dispatcher.UIThread aqui: antes do AppBuilder ele fica ligado ao NullDispatcherImpl.
+
     public static void Install()
     {
         AppDomain.CurrentDomain.UnhandledException += (_, e) =>
         {
             if (e.ExceptionObject is Exception ex) Write("Erro fatal", ex);
         };
-        Dispatcher.UIThread.UnhandledException += (_, e) => Write("Interface", e.Exception);
         TaskScheduler.UnobservedTaskException += (_, e) => Write("Tarefa em segundo plano", e.Exception);
     }
+
+    public static void InstallDispatcher() =>
+        Dispatcher.UIThread.UnhandledException += (_, e) => Write("Interface", e.Exception);
 
     public static void Write(string context, Exception ex)
     {

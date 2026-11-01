@@ -32,7 +32,7 @@ Reproduções antes das respectivas correções:
 
 ## Verificação
 
-Suíte final: **277 testes passaram, 0 falhas**, em 1 min 52 s, executados no Windows com Avalonia/Skia headless. O aviso xUnit2031 de GamesTests já existia.
+Suíte final repetida após o ajuste de inicialização: **277 testes passaram, 0 falhas**, em 1 min 53 s, no Windows com Avalonia/Skia headless. `dotnet run --project linux/tests/InfoPC.StartupProbe -c Release` também passou. O aviso xUnit2031 de GamesTests já existia.
 
 - Windows: `dotnet build InfoPC.csproj -c Release -nologo --no-incremental -v quiet` → 0 erros, 16 avisos conhecidos, versão 1.1.8.
 - Linux: `dotnet test linux/tests/InfoPC.Tests/InfoPC.Tests.csproj -c Release --nologo --logger 'console;verbosity=minimal' --logger 'trx;LogFileName=linux-118.trx' --blame-hang-timeout 60s`.
@@ -40,6 +40,8 @@ Suíte final: **277 testes passaram, 0 falhas**, em 1 min 52 s, executados no Wi
 - Nome antigo: seis termos, 0 ocorrências inesperadas. git diff --check limpo. Drivers/, LICENSE e avisos intactos; nenhuma dependência nova, banco ou migração. Windows só mudou de versão.
 
 ## Publicação e revisão
+
+A tentativa inicial `41349512015` em `56f08c6` foi bloqueada nos dois pacotes Linux: o novo diagnóstico acessava o dispatcher antes de existir plataforma. O probe em processo separado reproduziu `SupportsRunLoops == false`; a inscrição de UI foi movida para `OnFrameworkInitializationCompleted`. `InfoPC.StartupProbe` passou depois da correção e agora é exigido pelo CI. O rascunho falho não foi publicado. A suíte headless comum, que já monta a plataforma antes dos testes, não cobria essa ordem de entrada.
 
 Push e Release 1.1.8 serão executados depois da integração e conferidos por jobs, hashes e pacotes; a evidência final entra em nova entrega documental. Não há website ou serviço online a implantar. O repositório é público e a história privada continua só local; push exclusivamente de main.
 

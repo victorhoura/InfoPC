@@ -41,6 +41,12 @@ Um sinal nativo, falha do driver ou encerramento pelo OOM killer pode não produ
 
 ## Verificação e publicação
 
+### Inicialização do diagnóstico em processo novo
+
+A primeira tentativa de publicação (`41349512015`, commit `56f08c6`) foi bloqueada: x64 e arm64 saíam antes da captura da janela; o modo texto funcionava. O handler de diagnóstico da UI acessava `Dispatcher.UIThread` antes de o AppBuilder registrar a plataforma, fixando um `NullDispatcherImpl` sem suporte ao loop da janela. O teste isolado `linux/tests/InfoPC.StartupProbe` reproduziu a falha por `SupportsRunLoops == false`. A inscrição do dispatcher agora acontece em `App.OnFrameworkInitializationCompleted`, com a plataforma pronta; os handlers de processo continuam disponíveis desde a entrada. O probe passa e foi acrescentado ao CI. Usa a mesma Avalonia.Headless 11.3.22 (MIT) dos testes, sem biblioteca nova no executável.
+
+A suíte headless comum já inicializa a plataforma antes de executar cada teste, por isso não exercitava essa ordem de entrada. O novo probe complementa a suíte sem abrir janela nem consultar o hardware. A saída de erro do executável e a etapa de publicação agora também exibem a pilha de falhas de inicialização. A tentativa bloqueada ficou apenas como rascunho; não foi publicada como pacote final.
+
 Os testes vermelhos acima foram executados contra os caminhos defeituosos antes das respectivas correções. A suíte também percorre todas as 21 páginas duas vezes em cada fixture Intel, AMD e ARM, desenha cada tela, repete a entrada na GPU e simula navegação rápida enquanto a consulta está pendente. Há cobertura anterior de stress em segundo plano, limites térmicos e comandos de GPU por processos de teste.
 
 Comandos finais, contagens, hashes, workflows e publicação ficam em `colab/HANDOFF.md` e `colab/LOG.md`. A análise auxiliar não equivale à revisão cruzada: a entrega do codex aguarda o claude. Não há banco de dados, migração, website nem serviço online a implantar; a publicação correspondente é a Release com os executáveis portáteis.

@@ -10,6 +10,7 @@ public partial class App : Application
 
     public override void OnFrameworkInitializationCompleted()
     {
+        CrashLog.InstallDispatcher();
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             desktop.ShutdownMode = Avalonia.Controls.ShutdownMode.OnMainWindowClose;

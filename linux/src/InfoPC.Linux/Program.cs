@@ -22,6 +22,7 @@ public static class Program
         catch (Exception ex)
         {
             CrashLog.Write("Encerramento inesperado", ex);
+            Console.Error.WriteLine(ex);
             Console.Error.WriteLine("O InfoPC encontrou um erro. Detalhes em " + Path.Combine(AppSettings.Folder, "erros.log"));
             return 1;
         }

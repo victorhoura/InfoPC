@@ -143,7 +143,7 @@ jobs:
           xvfb-run -a -s "-screen 0 1280x800x24" sh -c '
             ./InfoPC & p=$!
             sleep 25
-            kill -0 "$p" || { echo "O programa fechou sozinho"; exit 1; }
+            kill -0 "$p" || { echo "O programa fechou sozinho"; find dados -name erros.log -exec cat {} \;; exit 1; }
             import -window root "$GITHUB_WORKSPACE/tela-linux-${{ matrix.arq }}.png"
             kill "$p"
           '
