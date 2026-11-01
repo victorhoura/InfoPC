@@ -73,7 +73,7 @@ Legenda: `[ ]` pendente · `[~]` em andamento · `[x]` concluída · responsáve
 ## Achados (fora do escopo da tarefa em que foram vistos)
 
 - [ ] Observação sem causa confirmada: segundo o autor, em teste da v1.1.6 uma passada pelas 21 páginas fechou em Sensores com código 0; três outras passadas foram limpas, sem falha nos eventos consultados pelo autor, com o usuário usando o PC. Codex não encontrou caminho de encerramento automático ligado à página por inspeção (2026-11-01); não abriu o programa, por restrição do usuário. Não classificado como defeito bloqueante. [Registro e limites](revisoes/2026-11-01-claude-r14h-saveorwarn-116.md).
-- [ ] Usuário: apagar `victorhoura/InfoPC-antigo` (D-030). O login do `gh` não tem a permissão `delete_repo`, que precisa de confirmação no navegador.
+- [x] Apagar `victorhoura/InfoPC-antigo` (D-030): feito pelo usuário em 2026-11-01. A história antiga fica só nesta máquina, em `refs/historico-privado/`.
 - [ ] PC real: CPU a 92 °C antes do benchmark e 100 °C durante, GPU com hot spot de 95 °C e `PerfCap` térmico (2026-10-31). É do PC, não do programa: limpeza e pasta térmica (usuário).
 
 Achados no PC real em 2026-10-31, sem mudança nesta entrega. Os dois primeiros foram medidos lado a lado com o original 0.16 e são iguais; o terceiro não foi comparado:
