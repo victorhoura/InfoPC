@@ -60,6 +60,10 @@ Legenda: `[ ]` pendente · `[~]` em andamento · `[x]` concluída · responsáve
 
 ## Fase 4 — Edição Linux (D-017 a D-023)
 
+- [~] Corrigir travamentos/congelamentos/fechamento relatados após teste do usuário, entregar v1.1.8, publicar GitHub e documentar Obsidian (codex, 2026-11-01). Reprodução e correções em [LINUX-ESTABILIDADE](../docs/LINUX-ESTABILIDADE.md). Validação/publicação em andamento; revisão cruzada do claude pendente.
+- [ ] Repetir o teste da v1.1.8 no Linux que apresentou o problema; se ocorrer novamente, correlacionar `erros.log`, saída do terminal e journal, identificando distribuição/GPU (usuário).
+- [ ] Revisão cruzada da estabilidade Linux/v1.1.8 entregue pelo codex (claude).
+
 - [x] Decisões D-017 a D-023 e esqueleto `linux/` (Core, app Avalonia, testes); build do Windows intacto (claude)
 - [x] Separar modelos portáteis dos arquivos do Windows (DiskHealthCard, BottleneckModel, rodapé do relatório) (claude)
 - [x] Núcleo Linux: sistema, CPU, memória, DMI, sensores (hwmon, RAPL), GPU (NVML, amdgpu, Intel), discos e S.M.A.R.T., energia, rede (claude)

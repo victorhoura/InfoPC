@@ -35,6 +35,8 @@ App WPF de uma janela (`MainWindow`) com menu lateral por categorias. Cada área
 
 O build do Windows (`InfoPC.csproj`) exclui `linux\**` e deve continuar com 0 erros e 16 avisos. O `InfoPC.Core` linka arquivos da raiz (lista em `docs/LINUX.md`, seção 5): mexer neles exige conferir as duas edições.
 
+Estabilidade Linux desde a 1.1.8: `Services` coleta sensores/dispositivos em worker e aguarda a aplicação no dispatcher antes da próxima rodada. `PageBase.OnClosed` encerra recursos de todas as páginas antes de parar os sensores; o lifetime termina com a principal. `CrashLog` mantém diagnóstico local limitado na pasta de dados. Causas, reproduções e limites em [LINUX-ESTABILIDADE.md](LINUX-ESTABILIDADE.md).
+
 O `publicar.bat` faz o mesmo publish, mas grava em `..\InfoPC-dist` (fora do repositório), copia `LEIA-ME.txt`, `LICENSE.txt` e `THIRD-PARTY-NOTICES.txt` para lá (as licenças exigem os avisos junto do programa) e antes fecha o programa, se estiver aberto. Quem usar o comando acima direto precisa copiar esses três arquivos à mão.
 
 Logo e ícone provisórios: `scripts/gerar-logo-provisorio.ps1` regrava os quatro arquivos de `Assets/` (D-016).

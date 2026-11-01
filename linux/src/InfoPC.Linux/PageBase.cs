@@ -23,6 +23,9 @@ public abstract class PageBase : UserControl
     public virtual void OnShown() { }
     public virtual void OnHidden() { }
 
+    /// <summary>Encerramento da janela principal, inclusive para páginas fora de vista.</summary>
+    public virtual void OnClosed() => OnHidden();
+
     /// <summary>A página mudou o próprio título ou subtítulo (ex.: a GPU escolhida): o cabeçalho se atualiza.</summary>
     public event Action? HeaderChanged;
     protected void RaiseHeaderChanged() => HeaderChanged?.Invoke();

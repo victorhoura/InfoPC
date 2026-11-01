@@ -14,9 +14,11 @@ public sealed class GpuPage : PageBase
     private readonly StackPanel _chips = new();
     private readonly StackPanel _content = new() { Spacing = 16 };
     private readonly Dictionary<string, TextBlock> _live = new();
-    private readonly StackPanel _extras = new() { Spacing = 4 };
+    private StackPanel _extras = new() { Spacing = 4 };
     private GpuReportData? _data;
     private int _index;
+    private int _generation;
+    private bool _tickBusy;
 
     public GpuPage()
     {
@@ -31,10 +33,11 @@ public sealed class GpuPage : PageBase
         Rebuild();
     }
 
-    public override void OnHidden() { S.Loaded -= Rebuild; S.Tick -= Tick; }
+    public override void OnHidden() { _generation++; S.Loaded -= Rebuild; S.Tick -= Tick; }
 
     private async void Rebuild()
     {
+        int generation = ++_generation;
         _chips.Children.Clear();
         _content.Children.Clear();
         _live.Clear();
@@ -51,7 +54,16 @@ public sealed class GpuPage : PageBase
         _index = Math.Clamp(_index, 0, S.Gpus.Count - 1);
         var gpu = S.Gpus[_index];
 
-        _data = await Task.Run(() => GpuInfoBuilder.Build(gpu));
+        GpuReportData data;
+        try { data = await Task.Run(() => GpuInfoBuilder.Build(gpu)); }
+        catch (Exception ex)
+        {
+            CrashLog.Write("Detalhes da GPU", ex);
+            if (generation == _generation) _content.Children.Add(Ui.Note("Não consegui ler a placa de vídeo: " + ex.Message));
+            return;
+        }
+        if (generation != _generation) return;
+        _data = data;
         _content.Children.Clear();
 
         // coluna esquerda: seções fixas; direita: leituras ao vivo
@@ -73,6 +85,8 @@ public sealed class GpuPage : PageBase
             liveBox.Children.Add(row);
         }
         liveBox.Children.Add(Ui.Separator());
+        // O painel anterior ainda pertence ao liveBox anterior, mesmo fora da janela.
+        _extras = new StackPanel { Spacing = 4 };
         liveBox.Children.Add(_extras);
         var right = Ui.Card(liveBox, "Leituras ao vivo");
         right.VerticalAlignment = VerticalAlignment.Top;
@@ -83,15 +97,27 @@ public sealed class GpuPage : PageBase
         RaiseHeaderChanged();
     }
 
-    private void Tick()
+    private async void Tick()
     {
-        if (S.Gpus.Count == 0 || _live.Count == 0) return;
+        if (_tickBusy || S.Gpus.Count == 0 || _live.Count == 0) return;
         var g = S.Gpus[Math.Clamp(_index, 0, S.Gpus.Count - 1)];
+        int generation = _generation;
+        bool suspended;
+        List<KeyValuePair<string, string>> extras;
+        _tickBusy = true;
+        try
+        {
+            (suspended, extras) = await Task.Run(() => (g.Suspended, GpuInfoBuilder.LiveExtras(g)));
+        }
+        catch (Exception ex) { CrashLog.Write("Leituras da GPU", ex); return; }
+        finally { _tickBusy = false; }
+        if (generation != _generation || _live.Count == 0) return;
         string p = $"gpu{g.Index}.";
-        if (g.Suspended)
+        if (suspended)
         {
             foreach (var t in _live.Values) t.Text = "—";
             _live["Uso da GPU"].Text = "em repouso";
+            _extras.Children.Clear();
             return;
         }
         float? V(string r) => S.Hub.Role(p + r);
@@ -106,7 +132,7 @@ public sealed class GpuPage : PageBase
         _live["Memória de vídeo"].Text = V("vram.used") is float used ? $"{used:0.0} GB" + (V("vram.pct") is float pct ? $" ({pct:0}%)" : "") : "—";
 
         _extras.Children.Clear();
-        foreach (var kv in GpuInfoBuilder.LiveExtras(g))
+        foreach (var kv in extras)
         {
             var row = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto") };
             var k = Ui.Muted(kv.Key); k.FontSize = 12.5;

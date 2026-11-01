@@ -84,6 +84,12 @@ public sealed class SensorHub
     public string DescribeCpuTempProblem()
     {
         if (CpuTemperature != null) return "";
+        return DescribeMissingCpuTemperature();
+    }
+
+    /// <summary>Explica a ausência já constatada, sem acessar os dicionários da thread da tela.</summary>
+    public static string DescribeMissingCpuTemperature()
+    {
         if (Sys.List("/sys/class/hwmon").Count == 0 && Sys.List("/sys/class/thermal").Count == 0)
             return "O kernel não expõe sensores de temperatura (comum em máquina virtual, contêiner ou WSL).";
         return "Nenhum sensor de temperatura da CPU foi encontrado. Instale o lm-sensors e rode 'sudo sensors-detect', ou confira se os módulos coretemp (Intel) ou k10temp (AMD) estão carregados.";

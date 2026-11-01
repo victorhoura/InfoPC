@@ -70,6 +70,12 @@ public sealed class StressPage : PageBase
     public override void OnShown() { S.Loaded -= Refresh; S.Loaded += Refresh; Refresh(); }
     public override void OnHidden() { S.Loaded -= Refresh; }
 
+    public override void OnClosed()
+    {
+        Finish("programa fechado");
+        base.OnClosed();
+    }
+
     private void Refresh()
     {
         _gpu.IsEnabled = GpuBench.FindTool() != null;

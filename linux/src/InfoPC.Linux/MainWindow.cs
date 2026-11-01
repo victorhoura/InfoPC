@@ -34,9 +34,23 @@ public sealed class MainWindow : Window
             ShowLogo();
             Services.Current.LoadSettings();
             if (AppSettings.FolderNotice is { } notice) _ = Dialogs.ConfirmAsync(this, "Pasta de dados", notice, "ENTENDI");
-            await Services.Current.StartAsync();
+            try { await Services.Current.StartAsync(); }
+            catch (Exception ex)
+            {
+                await Dialogs.ConfirmAsync(this, "Leitura de hardware", "Não consegui concluir a detecção: " + ex.Message +
+                    ". Os detalhes foram registrados em erros.log na pasta de dados.", "ENTENDI");
+            }
         };
         Closing += (_, _) => Services.Current.Save();
+        Closed += (_, _) =>
+        {
+            foreach (var page in _pages.Values)
+            {
+                try { page.OnClosed(); }
+                catch (Exception ex) { CrashLog.Write("Fechamento de página", ex); }
+            }
+            Services.Current.Stop();
+        };
         Services.Current.DeviceChanged += c =>
         {
             if (Services.Current.Settings.DeviceToasts) ToastWindow.Show(c);

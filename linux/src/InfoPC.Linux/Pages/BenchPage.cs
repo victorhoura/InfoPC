@@ -97,6 +97,13 @@ public sealed class BenchPage : PageBase
 
     public override void OnHidden() { S.Tick -= Live; S.Loaded -= RefreshTargets; }
 
+    public override void OnClosed()
+    {
+        _cpuCts?.Cancel(); _simCts?.Cancel(); _memCts?.Cancel(); _diskCts?.Cancel(); _gpuCts?.Cancel();
+        _timer?.Stop();
+        base.OnClosed();
+    }
+
     // ======================================================== CPU · render
 
     private Control BuildCpu()

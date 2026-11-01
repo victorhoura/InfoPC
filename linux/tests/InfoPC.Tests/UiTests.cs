@@ -82,6 +82,125 @@ public class UiTests
 
     private static string? ShotsDir => Environment.GetEnvironmentVariable("INFOPC_SHOTS") is { Length: > 0 } d ? d : null;
 
+    [AvaloniaFact]
+    public async Task A_failing_page_does_not_skip_the_other_sensor_subscribers()
+    {
+        using var fx = Fx.Use("intel-desktop");
+        var w = await OpenAsync();
+        int ticks = 0;
+        void Fail() => throw new IOException("página indisponível");
+        void Count() => ticks++;
+        Services.Current.Tick += Fail;
+        Services.Current.Tick += Count;
+        try
+        {
+            await Task.Delay(1500);
+            Pump();
+            Assert.True(ticks > 0, "Uma página com erro não pode interromper o monitor de segurança do stress.");
+        }
+        finally
+        {
+            Services.Current.Tick -= Fail;
+            Services.Current.Tick -= Count;
+            w.Close();
+            Services.Current.ResetForTests();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task Closing_the_main_window_stops_stress_even_with_an_overlay_open()
+    {
+        using var fx = Fx.Use("intel-desktop");
+        var w = await OpenAsync();
+        OverlayWindow? overlay = null;
+        Button? btn = null;
+        try
+        {
+            overlay = new OverlayWindow();
+            overlay.Show();
+            w.Navigate("stress");
+            await Settle();
+            var page = w.Page("stress")!;
+            btn = page.GetLogicalDescendants().OfType<Button>().First(b => b.Content as string == "INICIAR");
+            btn.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            Assert.Equal("PARAR", btn.Content);
+            w.Close();
+            Pump();
+            Assert.Equal("INICIAR", btn.Content);
+        }
+        finally
+        {
+            if (btn?.Content as string == "PARAR") btn.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            overlay?.Close();
+            w.Close();
+            Services.Current.ResetForTests();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task A_busy_window_does_not_accumulate_sensor_updates()
+    {
+        using var fx = Fx.Use("intel-desktop");
+        var w = await OpenAsync();
+        int ticks = 0;
+        void Count() => ticks++;
+        Services.Current.Tick += Count;
+        try
+        {
+            Pump();
+            ticks = 0;
+            // Simula a janela ocupada: o produtor deve esperar, sem enfileirar uma atualização por segundo.
+            Thread.Sleep(3200);
+            Pump();
+            Assert.InRange(ticks, 0, 1);
+        }
+        finally
+        {
+            Services.Current.Tick -= Count;
+            w.Close();
+            Services.Current.ResetForTests();
+        }
+    }
+
+    [AvaloniaTheory]
+    [InlineData("amd-laptop", false)]
+    [InlineData("amd-laptop", true)]
+    public async Task Returning_to_the_gpu_page_does_not_crash_the_window(string fixture, bool rapid)
+    {
+        using var fx = Fx.Use(fixture);
+        var errors = new List<Exception>();
+        void Capture(object? sender, DispatcherUnhandledExceptionEventArgs e)
+        {
+            errors.Add(e.Exception);
+            e.Handled = true;
+        }
+        Dispatcher.UIThread.UnhandledException += Capture;
+        var w = await OpenAsync();
+        try
+        {
+            for (int i = 0; i < 3; i++)
+            {
+                w.Navigate("gpu");
+                if (!rapid) await Settle();
+                Assert.True(w.IsVisible);
+                Assert.Empty(errors);
+                if (!rapid) Assert.Contains(w.Page("gpu")!.GetLogicalDescendants().OfType<TextBlock>(), t => t.Text == "Uso da GPU");
+                w.Navigate("sensors");
+                if (!rapid) await Settle();
+            }
+            w.Navigate("gpu");
+            await Settle();
+            Assert.Empty(errors);
+            Assert.Contains(w.Page("gpu")!.GetLogicalDescendants().OfType<TextBlock>(), t => t.Text == "Uso da GPU");
+        }
+        finally
+        {
+            w.Close();
+            Services.Current.ResetForTests();
+            Dispatcher.UIThread.UnhandledException -= Capture;
+        }
+    }
+
     [AvaloniaTheory]
     [InlineData("intel-desktop")]
     [InlineData("amd-laptop")]
@@ -93,7 +212,7 @@ public class UiTests
         try
         {
             Assert.NotEmpty(w.Entries);
-            foreach (var e in w.Entries)
+            foreach (var e in w.Entries.Concat(w.Entries))
             {
                 w.Navigate(e.Key);
                 await Settle();

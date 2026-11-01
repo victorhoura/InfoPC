@@ -11,7 +11,7 @@ Distribuições com glibc, em x86_64 ou arm64: Ubuntu, Debian, Mint, Fedora, Arc
 **Sem compilar:** baixe o pacote pronto da Release, sem login. Em arm64, troque `linux-x64` por `linux-arm64`.
 
 ```bash
-curl -fsSL https://github.com/victorhoura/InfoPC/releases/download/v1.1.7/InfoPC-1.1.7-linux-x64.tar.gz | tar xz && ./InfoPC/InfoPC
+curl -fsSL https://github.com/victorhoura/InfoPC/releases/download/v1.1.8/InfoPC-1.1.8-linux-x64.tar.gz | tar xz && ./InfoPC/InfoPC
 ```
 
 A janela usa X11: em sessão Wayland ela abre pelo XWayland, conferido em GNOME e KDE. Sem XWayland ou sem sessão gráfica, o programa explica o que falta, e o modo texto continua funcionando.
@@ -49,7 +49,21 @@ O .NET em `~/.dotnet` e os pacotes do sistema não são removidos. O desinstalad
 marca `.instalado-pelo-infopc` (gravada pelo instalador) e nada além dos arquivos do programa e de `dados/`, inclusive ocultos;
 apaga item por item e só remove a pasta se ela ficar vazia.
 
-Atualizar: `git -C ~/InfoPC pull` e `bash ~/InfoPC/linux/instalar.sh`.
+Atualizar uma instalação feita pelo clone em `~/InfoPC` (feche a janela antes):
+
+```bash
+git -C "$HOME/InfoPC" pull --ff-only && bash "$HOME/InfoPC/linux/instalar.sh" --yes
+```
+
+O instalador detecta x64/arm64 e troca o executável, preservando `dados/`. Se você apenas extraiu o pacote pronto, extraia a nova versão no mesmo local depois de fechar o programa; o pacote não contém `dados/`, então suas configurações permanecem.
+
+### Travamento ou fechamento inesperado
+
+A partir da 1.1.8, erros gerenciados e falhas nas consultas protegidas ficam em `dados/<identidade>/erros.log`, ao lado do executável, ou na pasta alternativa mostrada por `infopc --diagnostico`. O registro contém data, versão, contexto e pilha de erro; mantém um arquivo anterior (`erros.log.anterior`) e tamanho limitado. Sem permissão de escrita, a falha de registro não causa outro encerramento. Nenhum registro é enviado pela internet.
+
+Se o programa voltar a fechar, execute `infopc` no terminal e consulte o registro junto da saída e do log do sistema (`journalctl -b --no-pager | tail -100`). Um encerramento por falta de memória, sinal nativo ou driver gráfico pode não passar pelo registro gerenciado. O relato do problema em Linux físico em 01/11/2026 não veio com log nem identificação da distribuição/GPU: foram corrigidos defeitos reproduzidos por testes, e a confirmação no mesmo hardware continua necessária.
+
+As leituras periódicas esperam a atualização da janela antes de começar outra rodada, com no máximo uma atualização pendente. As consultas de dispositivos e detalhes da GPU ficam fora da thread da interface. Ao fechar a principal, as páginas encerram suas cargas e tarefas antes de o serviço de sensores parar; o overlay não mantém a aplicação aberta sozinho.
 
 ## 2. Usar
 

@@ -81,6 +81,12 @@ public sealed class OverlayPage : PageBase
     // A atualização acompanha a janela do overlay, não a página: o overlay continua aberto (e atualizado) com outra página na frente.
     private void Tick() => _win?.Update();
 
+    public override void OnClosed()
+    {
+        _win?.Close();
+        base.OnClosed();
+    }
+
     internal void Attach(OverlayWindow w)
     {
         _win = w;

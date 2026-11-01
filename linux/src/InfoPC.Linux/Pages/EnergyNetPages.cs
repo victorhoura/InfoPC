@@ -12,6 +12,7 @@ public sealed class EnergyPage : PageBase
 
     private readonly StackPanel _list = new() { Spacing = 14 };
     private int _ticks;
+    private bool _busy;
 
     public EnergyPage() => Body.Children.Add(_list);
 
@@ -22,9 +23,25 @@ public sealed class EnergyPage : PageBase
 
     private async void Rebuild()
     {
-        var cards = await Task.Run(() => EnergyCards.Build(S.Hub));
-        _list.Children.Clear();
-        foreach (var c in cards) _list.Children.Add(HealthCardView.Create(c));
+        if (_busy) return;
+        _busy = true;
+        // Copia os valores na thread da tela: o worker não pode enumerar Rows durante Apply.
+        var power = S.Hub.Rows.Where(x => x.Kind == SensorKind.Power && x.RawValue is > 0).Take(6)
+            .Select(x => new KeyValuePair<string, string>($"{x.Hardware} · {x.Name}", x.Value)).ToList();
+        try
+        {
+            var cards = await Task.Run(() => EnergyCards.Build());
+            cards[^1].Metrics.AddRange(power);
+            _list.Children.Clear();
+            foreach (var c in cards) _list.Children.Add(HealthCardView.Create(c));
+        }
+        catch (Exception ex)
+        {
+            CrashLog.Write("Energia", ex);
+            _list.Children.Clear();
+            _list.Children.Add(Ui.Note("Não consegui ler os dados de energia: " + ex.Message));
+        }
+        finally { _busy = false; }
     }
 }
 

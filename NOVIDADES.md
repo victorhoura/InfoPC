@@ -1,3 +1,12 @@
+## Novidades da v1.1.8
+
+**Linux — estabilidade**
+- Corrigido um fechamento ao voltar à página Placa de vídeo ou trocar a GPU. Consultas antigas também deixam de reconstruir uma página que já mudou.
+- Consultas ao driver de vídeo e a dispositivos USB/discos ficam em segundo plano. A janela ocupada não acumula atualizações de sensores.
+- Energia e Visão geral usam cópias dos valores ao consultar o hardware em paralelo; uma página com erro não interrompe os demais monitores.
+- Fechar a janela principal encerra overlays, cancela benchmarks e para as cargas de stress antes de desligar os sensores. Os limites de segurança permanecem iguais.
+- Erros ficam registrados localmente em `erros.log`, na pasta de dados, com rotação e sem envio pela internet.
+
 ## Novidades da v1.1.7
 
 **Windows**

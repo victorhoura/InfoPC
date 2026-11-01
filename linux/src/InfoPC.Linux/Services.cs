@@ -58,7 +58,7 @@ public sealed class Services
     /// <summary>Um dispositivo USB ou de armazenamento entrou ou saiu (na thread da tela).</summary>
     public event Action<DeviceChange>? DeviceChanged;
 
-    private readonly DeviceWatcher _watcher = new();
+    private DeviceWatcher _watcher = new();
     private int _deviceTick;
 
     private bool _started;
@@ -72,14 +72,22 @@ public sealed class Services
     /// <summary>Para a leitura periódica e esquece o estado (os testes trocam de fixture entre uma tela e outra).</summary>
     internal void ResetForTests()
     {
-        _cts.Cancel();
+        Stop();
         _cts = new CancellationTokenSource();
         _ready = new(TaskCreationOptions.RunContinuationsAsynchronously);
         _started = false; _settingsLoaded = false; Ready = false; Paused = false;
         Settings = new AppSettings(); Hub = new SensorHub(); Gpus = Array.Empty<GpuDevice>(); MainGpu = null; Disks = Array.Empty<PhysicalDisk>();
         Cpu = null; Os = null; Dmi = null; Ram = null; Smart = null;
         History.Clear();
+        _deviceTick = 0;
         Loaded = null; Tick = null; DeviceChanged = null;
+    }
+
+    /// <summary>Impede novas leituras e descarta atualizações pendentes quando a janela fecha.</summary>
+    public void Stop()
+    {
+        _cts.Cancel();
+        _ready.TrySetCanceled();
     }
 
     /// <summary>Carrega uma vez só. A janela chama antes de StartAsync: o aviso de um Load que falhou precisa existir quando ela olha se há o que mostrar.</summary>
@@ -96,40 +104,65 @@ public sealed class Services
         if (_started) return;
         _started = true;
         var token = _cts.Token;
+        var ready = _ready;
         LoadSettings();
 
-        await Task.Run(() =>
+        try
         {
-            Os = OsInfo.Read();
-            Cpu = CpuInfo.Read();
-            Dmi = InfoPC.Dmi.Read();
-            Gpus = GpuCollector.Detect(refresh: true);
+            // Só publica o resultado se esta ainda for a sessão ativa.
+            var state = await Task.Run(() =>
+            {
+                var os = OsInfo.Read();
+                var cpu = CpuInfo.Read();
+                var dmi = InfoPC.Dmi.Read();
+                var gpus = GpuCollector.Detect(refresh: true);
+                var disks = DiskCollector.Disks();
+                var hub = SensorHub.CreateDefault(gpus);
+                var watcher = new DeviceWatcher();
+                watcher.Poll();
+                return (os, cpu, dmi, gpus, disks, hub, watcher);
+            });
+            if (token.IsCancellationRequested) return;
+            (Os, Cpu, Dmi, Gpus, Disks, Hub, _watcher) = state;
             MainGpu = GpuCollector.Main(Gpus);
-            Disks = DiskCollector.Disks();
-            Hub = SensorHub.CreateDefault(Gpus);
-            _watcher.Poll();                                   // só guarda a lista inicial: ninguém é avisado do que já estava plugado
-        });
+        }
+        catch (Exception ex)
+        {
+            CrashLog.Write("Detecção de hardware", ex);
+            ready.TrySetException(ex);
+            throw;
+        }
         Ready = true;
-        _ready.TrySetResult();
+        ready.TrySetResult();
         Loaded?.Invoke();
 
+        var hub = Hub;
+        var watcher = _watcher;
         _ = Task.Run(async () =>
         {
             while (!token.IsCancellationRequested)
             {
-                if (!Paused)
+                try
                 {
-                    var samples = Hub.Collect();
-                    Dispatcher.UIThread.Post(() =>
+                    if (!Paused)
                     {
-                        if (Paused) return;
-                        Hub.Apply(samples);
-                        Record();
-                        Tick?.Invoke();
-                        PollDevices();
-                    });
+                        var samples = hub.Collect();
+                        // sysfs pode esperar um dispositivo/driver: nunca o leia na thread da janela.
+                        var changes = ++_deviceTick % 2 == 0 ? watcher.Poll() : new List<DeviceChange>();
+                        await Dispatcher.UIThread.InvokeAsync(() =>
+                        {
+                            if (token.IsCancellationRequested || Paused) return;
+                            hub.Apply(samples);
+                            Record();
+                            NotifyTick();
+                            foreach (var c in changes) DeviceChanged?.Invoke(c);
+                        });
+                    }
                 }
-                try { await Task.Delay(1000, token); } catch (OperationCanceledException) { break; }
+                catch (Exception ex) { CrashLog.Write("Atualização de sensores", ex); }
+                // Esperar a aplicação limita a fila a uma atualização, mesmo com a janela ocupada.
+                try { await Task.Delay(1000, token); }
+                catch (OperationCanceledException) when (token.IsCancellationRequested) { break; }
             }
         });
     }
@@ -139,14 +172,16 @@ public sealed class Services
     {
         Hub.Apply(Hub.Collect());
         Record();
-        Tick?.Invoke();
+        NotifyTick();
     }
 
-    /// <summary>A cada 2 s compara a lista de dispositivos USB e de armazenamento.</summary>
-    private void PollDevices()
+    private void NotifyTick()
     {
-        if (++_deviceTick % 2 != 0) return;
-        foreach (var c in _watcher.Poll()) DeviceChanged?.Invoke(c);
+        foreach (Action handler in Tick?.GetInvocationList() ?? Array.Empty<Delegate>())
+        {
+            try { handler(); }
+            catch (Exception ex) { CrashLog.Write("Página durante a leitura de sensores", ex); }
+        }
     }
 
     /// <summary>Recarrega a lista de discos (pendrive plugado, S.M.A.R.T. lido...).</summary>

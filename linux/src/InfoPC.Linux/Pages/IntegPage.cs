@@ -90,6 +90,8 @@ public sealed class IntegPage : PageBase
 
     public override void OnHidden() { }
 
+    public override void OnClosed() => Stop(release: true);
+
     // ---------------- conexão ----------------
 
     private async Task ConnectAsync()

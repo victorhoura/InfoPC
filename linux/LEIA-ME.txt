@@ -12,6 +12,15 @@ COMO USAR
                           --relatorio, --json, --diagnostico, --versao
 - infopc --diagnostico    mostra o que o programa encontrou e o que falta instalar para ler tudo
 
+ATUALIZAR (instalado pelo clone em ~/InfoPC; feche a janela primeiro)
+- git -C "$HOME/InfoPC" pull --ff-only && bash "$HOME/InfoPC/linux/instalar.sh" --yes
+- As configuracoes e o historico em dados/ sao preservados.
+
+ERROS
+- Desde a 1.1.8, erros.log na pasta de dados guarda detalhes locais de falhas gerenciadas.
+  O arquivo tem tamanho limitado, mantem erros.log.anterior e nao e enviado pela internet.
+  Um encerramento pelo kernel ou driver nativo pode nao aparecer nesse registro.
+
 PERMISSÕES
 - O programa abre como usuário comum. Quando uma ação precisa de administrador (S.M.A.R.T., módulos de RAM,
   ajustes da Otimização, instalar apps ou drivers), ele pede a senha naquele momento (pkexec).

@@ -16,6 +16,7 @@ public sealed class OcPage : PageBase
     private readonly Slider _power = new() { Minimum = 100, Maximum = 400, Width = 360 };
     private readonly Slider _clock = new() { Minimum = 500, Maximum = 3500, Width = 360 };
     private readonly TextBlock _powerText = Ui.Muted(""), _clockText = Ui.Muted("");
+    private readonly StackPanel _powerRow, _clockRow;
     private readonly StatusText _gpuStatus = new();
 
     private int _target, _dur = 1;
@@ -27,10 +28,14 @@ public sealed class OcPage : PageBase
     private readonly StackPanel _history = new() { Spacing = 6 };
     private readonly StackPanel _errors = new() { Spacing = 6 };
     private CancellationTokenSource? _cts;
+    private StressTester? _checkStress;
+    private GpuStress? _checkGpuStress;
     private readonly StackPanel _guide = new() { Spacing = 10 };
 
     public OcPage()
     {
+        _powerRow = Ui.HStack(14, _power, _powerText);
+        _clockRow = Ui.HStack(14, _clock, _clockText);
         _checkBtn = Ui.Primary("INICIAR VERIFICAÇÃO", RunCheck);
         _power.ValueChanged += (_, _) => _powerText.Text = $"{_power.Value:0} W";
         _clock.ValueChanged += (_, _) => _clockText.Text = $"{_clock.Value:0} MHz";
@@ -52,6 +57,13 @@ public sealed class OcPage : PageBase
 
     public override void OnShown() { S.Loaded -= Refresh; S.Loaded += Refresh; Refresh(); }
     public override void OnHidden() => S.Loaded -= Refresh;
+
+    public override void OnClosed()
+    {
+        _cts?.Cancel();
+        _checkStress?.Stop(); _checkGpuStress?.Stop();
+        base.OnClosed();
+    }
 
     private void Refresh()
     {
@@ -85,10 +97,10 @@ public sealed class OcPage : PageBase
         _clock.Minimum = 500; _clock.Maximum = maxClk.Value; _clock.Value = maxClk.Value;
         _gpuBox.Children.Add(Ui.Muted(g.Name));
         _gpuBox.Children.Add(Ui.Label("Limite de energia"));
-        _gpuBox.Children.Add(Ui.HStack(14, _power, _powerText));
+        _gpuBox.Children.Add(_powerRow);
         _gpuBox.Children.Add(Ui.Muted($"Padrão da placa: {(def ?? 0) / 1000.0:0} W · faixa {lim.Value.Min / 1000.0:0}–{lim.Value.Max / 1000.0:0} W"));
         _gpuBox.Children.Add(Ui.Label("Clock máximo do núcleo (trava)"));
-        _gpuBox.Children.Add(Ui.HStack(14, _clock, _clockText));
+        _gpuBox.Children.Add(_clockRow);
         _gpuBox.Children.Add(Ui.Note("Baixar o limite de energia e travar o clock reduz calor e ruído com pouca perda de FPS. Os ajustes valem até reiniciar o PC. A senha de administrador é pedida (pkexec) ao aplicar."));
         _gpuBox.Children.Add(Ui.HStack(10, Ui.Primary("APLICAR", () => ApplyGpu(g)), Ui.Outline("RESTAURAR PADRÃO", () => ResetGpu(g, def))));
         _gpuBox.Children.Add(_gpuStatus);
@@ -130,14 +142,15 @@ public sealed class OcPage : PageBase
         _checkBtn.Content = "CANCELAR"; _checkBtn.Classes.Remove("primary"); _checkBtn.Classes.Add("outline");
         _verdict.IsVisible = false;
 
-        var baseline = await Task.Run(() => KernelLog.ErrorsSince(1), ct);
+        var baseline = await Task.Run(() => KernelLog.ErrorsSince(1));
         var check = new StabilityCheck(cpu, gpu, baseline);
         var stress = new StressTester(); var gstress = new GpuStress();
+        _checkStress = stress; _checkGpuStress = gstress;
         string? failure = null, noLoad = null; double? cpuScore = null;
         var start = DateTime.Now;
         try
         {
-            if (cpu)
+            if (cpu && !ct.IsCancellationRequested)
             {
                 _checkStatus.Text = "Medindo a nota da CPU (render multi-core)…";
                 var bench = new BenchRenderer();
@@ -160,7 +173,7 @@ public sealed class OcPage : PageBase
             }
         }
         catch (OperationCanceledException) { }
-        finally { stress.Stop(); gstress.Stop(); }
+        finally { stress.Stop(); gstress.Stop(); _checkStress = null; _checkGpuStress = null; }
 
         bool cancelled = ct.IsCancellationRequested && failure == null;
         _cts = null;

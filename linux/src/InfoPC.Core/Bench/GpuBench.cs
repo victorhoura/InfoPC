@@ -63,9 +63,12 @@ public sealed class GpuStress
             while (!token.IsCancellationRequested)
             {
                 var started = DateTime.Now;
-                var p = ProcessRunner.Start(exe, glmark ? new[] { "--run-forever" } : Array.Empty<string>(), null, redirect: true);
+                using var p = ProcessRunner.Start(exe, glmark ? new[] { "--run-forever" } : Array.Empty<string>(), null, redirect: true);
                 _proc = p;
                 if (p == null) { Error = "não consegui iniciar " + tool; break; }
+                // Stop pode ter ocorrido entre a condição do while e Process.Start.
+                using var stop = token.Register(() => ProcessRunner.KillTree(p));
+                if (token.IsCancellationRequested) break;
                 p.OutputDataReceived += (_, _) => { };
                 p.ErrorDataReceived += (_, _) => { };
                 p.BeginOutputReadLine(); p.BeginErrorReadLine();

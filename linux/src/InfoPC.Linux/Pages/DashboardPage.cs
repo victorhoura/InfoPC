@@ -190,7 +190,16 @@ public sealed class DashboardPage : PageBase
         if (_healthBusy) return;
         _healthBusy = true;
         _healthAt = DateTime.Now;
-        var items = await Task.Run(BuildHealth);
+        // O hub é alterado na thread da janela; não leia seus dicionários no worker.
+        bool temp = S.Hub.CpuTemperature != null, raplBlocked = S.Hub.Rapl?.Blocked == true;
+        List<(bool Ok, string Title, string Detail)> items;
+        try { items = await Task.Run(() => BuildHealth(temp, raplBlocked)); }
+        catch (Exception ex)
+        {
+            CrashLog.Write("Saúde do PC", ex);
+            _healthBusy = false;
+            return;
+        }
         _health.Children.Clear();
         foreach (var (ok, title, detail) in items)
         {
@@ -204,12 +213,11 @@ public sealed class DashboardPage : PageBase
         _healthBusy = false;
     }
 
-    private List<(bool Ok, string Title, string Detail)> BuildHealth()
+    private List<(bool Ok, string Title, string Detail)> BuildHealth(bool temp, bool raplBlocked)
     {
         var list = new List<(bool, string, string)>();
-        bool temp = S.Hub.CpuTemperature != null;
-        list.Add((temp, "Sensores da CPU", temp ? "Temperatura disponível." : S.Hub.DescribeCpuTempProblem()));
-        if (S.Hub.Rapl?.Blocked == true) list.Add((false, "Consumo da CPU", "O kernel só deixa o administrador ler o consumo (RAPL). Os demais sensores funcionam."));
+        list.Add((temp, "Sensores da CPU", temp ? "Temperatura disponível." : SensorHub.DescribeMissingCpuTemperature()));
+        if (raplBlocked) list.Add((false, "Consumo da CPU", "O kernel só deixa o administrador ler o consumo (RAPL). Os demais sensores funcionam."));
 
         var errs = KernelLog.ErrorsSince(7);
         list.Add((errs.Error == null && errs.Total == 0, "Sem erros de hardware",
