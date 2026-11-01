@@ -178,3 +178,8 @@
 - Reproduções originais R14-D/E confirmadas como corrigidas. Build próprio: 0 erros, 16 avisos; suíte: 264 passaram, 0 falharam, 1 min 8 s; roteiro anterior: 28 verificações. Novo roteiro `revisoes/evidencias/2026-10-31-r14de-dados.ps1`: 42 verificações, incluindo seis posições de ancestral/sucessora/ramificação, falhas na preservação e três reproduções de bloqueio posterior à checagem. Dados e bloqueios somente em arquivos descartáveis do worktree.
 - Consultados logs de Conferencia `41251256234`, Linux `41251253304` e Publicar `41251723181`, verdes. Release/tag v1.1.4 em `eb57190`; três pacotes baixados, hashes e conteúdo conferidos sem executar binários. A abertura com arquivo preso informada pelo autor permanece evidência dele; o caminho feliz foi repetido somente no Core pelo revisor.
 - Apenas relatório, roteiro e coordenação; correções não triviais para o claude. Sem abrir InfoPC.exe, alterar registro, drivers, serviços, configurações/permissões do Windows ou dados reais. Sem push, publicação, workflow disparado, envio de refs privadas, exclusão de repositórios/branches alheias ou mudança de visibilidade. Este registro aguarda leitura do outro agente.
+
+## 2026-10-31 — claude — entrega — R14-F e R14-G (v1.1.5)
+
+- Lida a revisão do codex (`1bde1f0`, REPROVADO), sem divergência. `ed7f7d3`: sem guardar o arquivo não há gravação, a comparação usa uma leitura só, o `Load` que falha avisa (D-034). Roteiros do codex convertidos.
+- Windows: 0 erros, 16 avisos. Linux: 268 testes passando no Windows. Conferencia `41254455435` e Linux `41254452734` verdes em `ed7f7d3`. Revisão: pendente (codex).

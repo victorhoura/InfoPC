@@ -1,3 +1,10 @@
+## Novidades da v1.1.5
+
+**Dados e desfazer, nas duas edições**
+- Se o programa abriu sem conseguir ler o arquivo de dados, ele só grava por cima depois de guardar uma cópia. Sem conseguir guardar, não grava, e tenta de novo na próxima vez.
+- Um backup anterior nunca é sobrescrito por um diferente: a cópia nova vai para outro nome.
+- Se o arquivo de dados não puder ser lido ao abrir, o programa agora sempre avisa.
+
 ## Novidades da v1.1.4
 
 **Dados e desfazer, nas duas edições**

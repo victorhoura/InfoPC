@@ -19,6 +19,7 @@ Legenda: `[ ]` pendente · `[~]` em andamento · `[x]` concluída · responsáve
 - [x] Compilar sem alterações: 0 erros, 16 avisos; pacote portátil de ~197 MB (claude)
 - [x] Mapear a arquitetura em `docs/ARQUITETURA.md` (claude)
 - [x] Listar onde o código viola os requisitos: ver Fase 3 (claude)
+- [ ] Revisão cruzada da correção de R14-F e R14-G e da `v1.1.5` (`eb57190..main`, só commits do claude) (codex).
 - [x] Revisão cruzada da correção de R14-D e R14-E e da `v1.1.4` (`ae85961..eb57190`, só commits do claude) (codex, 2026-10-31). **REPROVADO**: reproduções originais corrigidas; R14-F bloqueante e R14-G importante. [Relatório](revisoes/2026-10-31-claude-r14de-114.md).
 - [x] Revisão cruzada da correção de R14-C e R15-A e da `v1.1.3` (`218dcda..ae85961`, só commits do claude) (codex, 2026-10-31). **REPROVADO**: reproduções originais corrigidas; R14-D bloqueante e R14-E importante, relatório abaixo.
 - [x] Revisão cruzada das correções da 1.1.2 e do workflow Conferencia (`8271e68..12b823f`) (codex, 2026-10-31). R15-A importante no teste de ubuntu-drivers; relatório abaixo.
@@ -52,7 +53,7 @@ Legenda: `[ ]` pendente · `[~]` em andamento · `[x]` concluída · responsáve
 - [x] Revisão cruzada da Fase 3 junto com todo o histórico até `9b168be`: **REPROVADO** (codex, 2026-10-28).
 - [~] FPS estimado sem chave, Drivers com VERIFICAR TUDO, perfil de jogo e RESTAURAR ORIGINAL da Steam: conferidos no PC real (claude, 2026-10-31). Falta o FPS **com** chave, que depende de uma chave da HowManyFPS (usuário).
 - [x] Conferir os termos de redistribuição dos drivers de `Drivers/` e as licenças "a conferir": feito, com CH340, CP210x e FTDI retirados (D-030, `docs/UPSTREAM.md`) (claude, 2026-10-30).
-- [~] Gerar o pacote final (D-029, D-030): `v1.1.4` publicada como pré-lançamento no repositório público, com `InfoPC.exe` aberto em Windows limpo do CI e usado no PC real (claude, 2026-10-31). Aguarda a revisão do codex e o teste em Linux físico.
+- [~] Gerar o pacote final (D-029, D-030): `v1.1.5` publicada como pré-lançamento no repositório público, com `InfoPC.exe` aberto em Windows limpo do CI e usado no PC real (claude, 2026-10-31). Aguarda a revisão do codex e o teste em Linux físico.
 
 ## Fase 4 — Edição Linux (D-017 a D-023)
 
@@ -109,8 +110,8 @@ Achado fora da revisão (claude, 2026-10-30): com os dados junto do programa, o 
 - [x] R15-A — **IMPORTANTE:** teste de `ubuntu-drivers devices` aceitava erro quando o comando estava instalado. Corrigido em `c8a04cc`; codex confirmou asserção de sucesso/timeout e execução ativa no modo `polkit-sim` do run `41246005320`, em 2026-10-31. Mesmo relatório de R14-C.
 - [x] R14-D — **BLOQUEANTE:** falha ao ler a trilha vira ausência de trilha e faz a cópia anterior ganhar sem aviso. [Relatório e roteiro originais](revisoes/2026-10-31-claude-r14c-r15a-113.md). Corrigido em `2e7a3b0` (claude, 2026-10-31; D-033); codex confirmou os bloqueios iniciais nos dois sentidos. O caso novo de bloqueio posterior à checagem está em R14-G.
 - [x] R14-E — **IMPORTANTE:** redução sequencial podia escolher uma ancestral entre três candidatas e avisar usando o caminho antigo. Corrigido em `2e7a3b0` (claude, 2026-10-31; D-033); codex confirmou a reprodução original e seis posições de ancestral/sucessora/ramificação, com preservação e caminho ativo correto, 2026-10-31.
-- [ ] R14-F — **BLOQUEANTE:** Save após Load ilegível limpa `_unreadOnLoad` mesmo quando preservar falha. Se o primeiro Save falha com o arquivo ainda preso, a tentativa seguinte sobrescreve sem backup; se só o `.corrompido` está preso, há perda já no primeiro Save. Core reproduzido, Windows inspecionado/compilado; corrigir nas duas edições (claude). [Relatório e roteiro](revisoes/2026-10-31-claude-r14de-114.md).
-- [ ] R14-G — **IMPORTANTE:** `Latest` relê candidatas após `CanRead`; um novo bloqueio da portátil posterior vira ausência de trilha, e a falha de migração faz `Resolve` devolver a fallback ancestral. Três reproduções; arquivos intactos, mas o desfazer posterior deixa de aparecer e o aviso não explica onde está. Corrigir no claude; mesmo relatório de R14-F.
+- [~] R14-F — **BLOQUEANTE:** Save após Load ilegível limpa `_unreadOnLoad` mesmo quando preservar falha. Se o primeiro Save falha com o arquivo ainda preso, a tentativa seguinte sobrescreve sem backup; se só o `.corrompido` está preso, há perda já no primeiro Save. Core reproduzido, Windows inspecionado/compilado; corrigir nas duas edições (claude). [Relatório e roteiro](revisoes/2026-10-31-claude-r14de-114.md). Corrigido em `ed7f7d3` (claude, 2026-10-31; D-034). Aguarda revisão do codex.
+- [~] R14-G — **IMPORTANTE:** `Latest` relê candidatas após `CanRead`; um novo bloqueio da portátil posterior vira ausência de trilha, e a falha de migração faz `Resolve` devolver a fallback ancestral. Três reproduções; arquivos intactos, mas o desfazer posterior deixa de aparecer e o aviso não explica onde está. Corrigir no claude; mesmo relatório de R14-F. Corrigido em `ed7f7d3` (claude, 2026-10-31; D-034). Aguarda revisão do codex.
 
 - 16 avisos de nulabilidade no build do original (`MainWindow.Oc.cs`, `DiskHealth.cs`). Não corrigir de carona.
 - Não há testes automatizados no original (a edição Linux tem a suíte em `linux/tests`).
