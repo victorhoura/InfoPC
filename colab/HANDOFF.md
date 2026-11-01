@@ -6,11 +6,15 @@
 |-----------------------------|-------------------------------------------------------------|
 | Última entrega por          | claude                                                      |
 | Data                        | 2026-11-01                                                  |
-| Assunto                     | Sensores em etapas, campos em branco e `v1.1.7`. **Aguarda revisão do codex** |
-| Último commit revisado      | `0f56c5bbb25d46117042a3c401f0217c666d0b91` (codex; relatório `454eff9`, lido pelo claude) |
-| Veredito da última revisão  | **APROVADO** — [R14-H, SaveOrWarn e v1.1.6](revisoes/2026-11-01-claude-r14h-saveorwarn-116.md) |
+| Assunto                     | Sensores em etapas, campos em branco e `v1.1.7`. **Revisão concluída; aguarda leitura do claude** |
+| Último commit revisado      | `5ec4d7fba13d1f8a321b4891246e930f996d4794` (codex, 2026-11-01) |
+| Veredito da última revisão  | **APROVADO** — [Sensores em etapas, campos em branco e v1.1.7](revisoes/2026-11-01-claude-sensores-117.md) |
 
-## O que revisar
+## Revisão cruzada concluída
+
+Codex: nenhum bloqueante ou importante novo demonstrado. Build próprio Windows com 0 erros e 16 avisos; 270 testes Linux no Windows e 13 verificações sintéticas contra o assembly do produto passaram. Conferidos a implementação da biblioteca no NuGet, os chamadores, a tag/Release, os logs de Publicar/Linux e os três pacotes da v1.1.7. Sem abrir o InfoPC ou carregar sensores deste PC. Concorrência real de hardware e AMD físico não foram exercitados pelo revisor; riscos e limites estão no relatório. Esta entrega de revisão aguarda leitura do claude, sem push pelo codex.
+
+## Escopo da revisão concluída
 
 `git log --no-merges --oneline 0f56c5b..main`. Só os commits do claude: `454eff9` é o relatório do próprio codex, e `86e2976` só registra a exclusão do repositório antigo.
 
@@ -33,7 +37,7 @@ O usuário pediu para continuar até o fim. Ele apagou `victorhoura/InfoPC-antig
 - **Temperatura, 60 s em uso leve (carga de 17%):** CPU mínima 58 °C, média 63,5 °C, máxima 73 °C.
 - **Não verificado (honestidade):**
   - **CPU AMD:** o nome `Core #` foi mantido por compatibilidade, sem testar; os nomes de hoje vêm da biblioteca lida no i5-10400.
-  - **Abrir e fechar o programa enquanto os discos ainda detectam:** o fechamento normal foi testado só depois dos 110 s.
+  - **Fechamento durante a detecção (atualização recebida na revisão):** segundo evidência do autor transmitida pelo usuário, a v1.1.7 fechou aos 3, 15 e 40 s em menos de 1 s, código 0. O registro original só cobria depois dos 110 s. Codex não repetiu em hardware real.
   - **Linux em PC físico:** sensores, S.M.A.R.T. e GPU de verdade. Janela de senha do polkit fechada pelo usuário (126) só está simulada.
   - **FPS com chave:** não há chave da HowManyFPS. **Sem hardware aqui:** Integração RGB e placas Arduino conectadas.
   - **Não clicado de propósito no PC real:** instalar driver NVIDIA, Windows Update, OTIMIZAR, APLICAR do Overclock, Instalar apps, remover dispositivos e liberar números COM, stress longo.

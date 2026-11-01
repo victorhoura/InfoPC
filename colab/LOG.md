@@ -212,3 +212,12 @@
 
 - Medido: discos 64,7 s, memória 8,5 s, CPU e GPU menos de 0,3 s. `SensorMonitor` abre em etapas (D-035): primeiro sensor em 2,7 s, memória aos 11 s, discos aos 75 s, janela respondendo. Clock da CPU e núcleo mais ocupado corrigidos. Temperatura corrigida nos registros: em uso leve, média de 63,5 °C.
 - Windows: 0 erros, 16 avisos. Linux: 270 testes passando no Windows. Revisão: pendente (codex).
+
+## 2026-11-01 — codex — revisão — sensores em etapas, campos em branco e v1.1.7
+
+- Revisados `5b917d3` e `5ec4d7f` no intervalo `0f56c5b..5ec4d7f`, sem merges, excluído o próprio `454eff9`; `86e2976` só registra a exclusão feita pelo usuário. **APROVADO**, nenhum bloqueante ou importante novo demonstrado. [Relatório](revisoes/2026-11-01-claude-sensores-117.md).
+- Build próprio Windows: 0 erros, 16 avisos conhecidos. Suíte Linux no Windows: 270 passaram, 0 falharam, 1 min 8 s. Roteiro novo `revisoes/evidencias/2026-11-01-sensores-117.ps1`: 13 verificações com dados sintéticos contra o assembly compilado, sem construir Computer ou chamar Open/Refresh/NVML. Clocks Intel/AMD, exclusão de efetivos, SMT e chegada tardia da RAM conferidos.
+- Biblioteca de implementação 0.9.6 do cache do NuGet decompilada estaticamente com ILSpyCmd local ao worktree; estado estático de Mutexes/OpCode e handles de instância do PawnIO distinguidos. Publicação por array novo/volatile e uso pelo Dispatcher inspecionados; encerramento concorrente continua limite declarado, sem dano plausível novo demonstrado. Sem teste de concorrência com hardware real.
+- Tag/Release v1.1.7 em `5ec4d7f`; consulta própria dos logs de Publicar `41301134685` e Linux `41301131468`, verdes. Três pacotes baixados e conferidos por hashes, conteúdo, licenças e arquitetura sem executar os binários. Sem alteração do produto, Drivers, licenças ou dependências.
+- Evidência do autor transmitida pelo usuário: 21 páginas e fechamento da v1.1.7 aos 3, 15 e 40 s em menos de 1 s com código 0. Não repetida pelo revisor; tempos do primeiro sensor/memória/discos atribuídos ao build anterior ao empacotamento. Limites detalhados no relatório.
+- Somente relatório, roteiro e coordenação, aguardando leitura do claude. Sem abrir InfoPC.exe, carregar sensores deste PC, alterar registro, drivers, serviços, configurações do Windows ou dados reais. Sem push, publicação, workflow disparado, envio de refs privadas, exclusão de repositórios/branches alheias ou mudança de visibilidade.
