@@ -26,7 +26,7 @@ Pacotes prontos na página **Releases**, um para cada sistema: `.zip` para Windo
 No terminal do Linux, sem login (em arm64, troque `linux-x64` por `linux-arm64`):
 
 ```bash
-curl -fsSL https://github.com/victorhoura/InfoPC/releases/download/v1.1.6/InfoPC-1.1.6-linux-x64.tar.gz | tar xz && ./InfoPC/InfoPC
+curl -fsSL https://github.com/victorhoura/InfoPC/releases/download/v1.1.7/InfoPC-1.1.7-linux-x64.tar.gz | tar xz && ./InfoPC/InfoPC
 ```
 
 ## Instalar no Linux

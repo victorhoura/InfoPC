@@ -19,6 +19,7 @@ Legenda: `[ ]` pendente · `[~]` em andamento · `[x]` concluída · responsáve
 - [x] Compilar sem alterações: 0 erros, 16 avisos; pacote portátil de ~197 MB (claude)
 - [x] Mapear a arquitetura em `docs/ARQUITETURA.md` (claude)
 - [x] Listar onde o código viola os requisitos: ver Fase 3 (claude)
+- [ ] Revisão cruzada da abertura em etapas dos sensores (D-035), dos campos em branco e da `v1.1.7` (`0f56c5b..main`, só commits do claude) (codex).
 - [x] Revisão cruzada da correção de R14-H, de `SaveOrWarn` e da `v1.1.6` (`10509b2..0f56c5b`, só commits do claude) (codex, 2026-11-01). **APROVADO**: R14-H confirmado, sem regressão demonstrada na ordem Load/ApplyTheme/Start; nenhum bloqueante ou importante novo. [Relatório](revisoes/2026-11-01-claude-r14h-saveorwarn-116.md).
 - [x] Revisão cruzada da correção de R14-F e R14-G e da `v1.1.5` (`eb57190..10509b2`, só commits do claude) (codex, 2026-10-31). **APROVADO COM RESSALVAS**: R14-F/G confirmados, nenhum bloqueante; R14-H importante no aviso Linux. [Relatório](revisoes/2026-10-31-claude-r14fg-115.md).
 - [x] Revisão cruzada da correção de R14-D e R14-E e da `v1.1.4` (`ae85961..eb57190`, só commits do claude) (codex, 2026-10-31). **REPROVADO**: reproduções originais corrigidas; R14-F bloqueante e R14-G importante. [Relatório](revisoes/2026-10-31-claude-r14de-114.md).
@@ -54,7 +55,7 @@ Legenda: `[ ]` pendente · `[~]` em andamento · `[x]` concluída · responsáve
 - [x] Revisão cruzada da Fase 3 junto com todo o histórico até `9b168be`: **REPROVADO** (codex, 2026-10-28).
 - [~] FPS estimado sem chave, Drivers com VERIFICAR TUDO, perfil de jogo e RESTAURAR ORIGINAL da Steam: conferidos no PC real (claude, 2026-10-31). Falta o FPS **com** chave, que depende de uma chave da HowManyFPS (usuário).
 - [x] Conferir os termos de redistribuição dos drivers de `Drivers/` e as licenças "a conferir": feito, com CH340, CP210x e FTDI retirados (D-030, `docs/UPSTREAM.md`) (claude, 2026-10-30).
-- [~] Gerar o pacote final (D-029, D-030): `v1.1.6` publicada como pré-lançamento no repositório público, com `InfoPC.exe` aberto em Windows limpo do CI e usado no PC real (claude, 2026-10-31). Revisão do codex **APROVADO** em 2026-11-01: hashes/conteúdo/licenças dos três pacotes conferidos sem executá-los localmente. Falta o teste em Linux físico (usuário); observação de Sensores abaixo sem causa confirmada.
+- [~] Gerar o pacote final (D-029, D-030): `v1.1.7` publicada como pré-lançamento no repositório público, com `InfoPC.exe` aberto em Windows limpo do CI e usado no PC real (claude, 2026-11-01). Falta a revisão do codex desta versão e o teste em Linux físico (usuário).
 
 ## Fase 4 — Edição Linux (D-017 a D-023)
 
@@ -74,12 +75,12 @@ Legenda: `[ ]` pendente · `[~]` em andamento · `[x]` concluída · responsáve
 
 - [ ] Observação sem causa confirmada: segundo o autor, em teste da v1.1.6 uma passada pelas 21 páginas fechou em Sensores com código 0; três outras passadas foram limpas, sem falha nos eventos consultados pelo autor, com o usuário usando o PC. Codex não encontrou caminho de encerramento automático ligado à página por inspeção (2026-11-01); não abriu o programa, por restrição do usuário. Não classificado como defeito bloqueante. [Registro e limites](revisoes/2026-11-01-claude-r14h-saveorwarn-116.md).
 - [x] Apagar `victorhoura/InfoPC-antigo` (D-030): feito pelo usuário em 2026-11-01. A história antiga fica só nesta máquina, em `refs/historico-privado/`.
-- [ ] PC real: CPU a 92 °C antes do benchmark e 100 °C durante, GPU com hot spot de 95 °C e `PerfCap` térmico (2026-10-31). É do PC, não do programa: limpeza e pasta térmica (usuário).
+- [ ] PC real: em uso leve, CPU com média de 63,5 °C e pico de 73 °C (carga de 17%, 60 s). Sob carga total, 100 °C no benchmark e GPU com hot spot de 95 °C e `PerfCap` térmico (2026-10-31). Os "92 °C em repouso" dos registros anteriores não eram repouso: havia testes e compilações rodando. É do PC, não do programa: limpeza e pasta térmica (usuário).
 
 Achados no PC real em 2026-10-31, sem mudança nesta entrega. Os dois primeiros foram medidos lado a lado com o original 0.16 e são iguais; o terceiro não foi comparado:
-- [ ] Windows: os sensores levam cerca de 75 s para a primeira leitura neste PC (73,5 s no original, 74,8 s no InfoPC). Até lá, a Visão geral diz "sem leitura da CPU" e Sensores fica em "Detectando o hardware...".
-- [ ] Windows: a memória salta de cerca de 280 MB para 760 MB depois de abrir Drivers ou Integração.
-- [ ] Windows: "Clock médio" do Benchmark e "Núcleo mais ocupado" do Gargalo ficam em branco neste PC (i5-10400).
+- [~] Windows: os sensores levavam cerca de 75 s para a primeira leitura neste PC, por causa da detecção de discos (64,7 s). Agora 2,7 s (D-035, claude, 2026-11-01). Aguarda revisão do codex.
+- [ ] Windows: a memória salta de cerca de 300 MB para 790 MB ao abrir Integração, e fica estável depois: não é vazamento. No original 0.16, o salto aparecia ao abrir Drivers. Causa não investigada.
+- [~] Windows: clock da CPU em branco na Visão geral, no Overlay e no Benchmark (`Core #` em vez de `CPU Core #`) e "Núcleo mais ocupado" no Gargalo (descartava as linhas `Thread`). Corrigido (claude, 2026-11-01). Aguarda revisão do codex.
 
 Revisão de 2026-10-28: [histórico e Fase 3](revisoes/2026-10-28-claude-historico-e-fase3.md), R01–R13. Correções de comportamento cabem ao autor; mudanças relativas aos requisitos aguardam orientação do usuário (AGENTS.md, seções 2 e 5). A revisão está concluída; a aprovação da entrega depende dos achados.
 

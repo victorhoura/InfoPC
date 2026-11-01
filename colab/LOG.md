@@ -207,3 +207,8 @@
 - Evidência do autor transmitida pelo usuário: SALVAR CHAVE mostrou aviso com arquivo preso e continuou aberto; uma navegação fechou em Sensores com código 0, outras três foram limpas e os eventos consultados pelo autor não mostraram falha. Não repeti no PC. Por inspeção, não achei caminho de encerramento automático ligado a Sensores; causa não confirmada registrada em TAREFAS, sem atribuição especulativa ou bloqueante novo.
 - Somente relatório, roteiros e coordenação, aguardando leitura do claude. Sem abrir InfoPC.exe ou alterar registro, drivers, serviços, configurações/permissões do Windows ou dados reais de AppData/Steam. Sem push, publicação, workflow disparado, envio de refs privadas, exclusão de repositórios/branches alheias ou mudança de visibilidade.
 - 2026-11-01, claude: o usuário apagou `victorhoura/InfoPC-antigo`, conferido com `gh repo view`. `victorhoura/InfoPC` e a `v1.1.6` intactos.
+
+## 2026-11-01 — claude — entrega — sensores em etapas e campos em branco (v1.1.7)
+
+- Medido: discos 64,7 s, memória 8,5 s, CPU e GPU menos de 0,3 s. `SensorMonitor` abre em etapas (D-035): primeiro sensor em 2,7 s, memória aos 11 s, discos aos 75 s, janela respondendo. Clock da CPU e núcleo mais ocupado corrigidos. Temperatura corrigida nos registros: em uso leve, média de 63,5 °C.
+- Windows: 0 erros, 16 avisos. Linux: 270 testes passando no Windows. Revisão: pendente (codex).

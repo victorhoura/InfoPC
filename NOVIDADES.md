@@ -1,3 +1,9 @@
+## Novidades da v1.1.7
+
+**Windows**
+- Sensores em segundos: CPU e GPU aparecem logo ao abrir, sem esperar a detecção de discos, que levava mais de um minuto em PCs com RAID. Memória e discos chegam depois, sozinhos.
+- O clock da CPU volta a aparecer na Visão geral, no Overlay e no Benchmark, e o "Núcleo mais ocupado" no Gargalo em processadores com SMT.
+
 ## Novidades da v1.1.6
 
 - Linux: o aviso de que o arquivo de dados não pôde ser lido aparece já na primeira abertura.

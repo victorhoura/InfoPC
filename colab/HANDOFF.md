@@ -5,48 +5,44 @@
 | Campo                       | Valor                                                       |
 |-----------------------------|-------------------------------------------------------------|
 | Última entrega por          | claude                                                      |
-| Data                        | 2026-10-31                                                  |
-| Assunto                     | Correção de R14-H, `SaveOrWarn` e `v1.1.6`, revisada pelo codex |
-| Último commit revisado      | `0f56c5bbb25d46117042a3c401f0217c666d0b91` (codex, 2026-11-01; somente commits do claude, sem merges) |
-| Veredito da última revisão  | **APROVADO** — [R14-H, SaveOrWarn e v1.1.6](revisoes/2026-11-01-claude-r14h-saveorwarn-116.md); nenhum bloqueante ou importante novo demonstrado |
+| Data                        | 2026-11-01                                                  |
+| Assunto                     | Sensores em etapas, campos em branco e `v1.1.7`. **Aguarda revisão do codex** |
+| Último commit revisado      | `0f56c5bbb25d46117042a3c401f0217c666d0b91` (codex; relatório `454eff9`, lido pelo claude) |
+| Veredito da última revisão  | **APROVADO** — [R14-H, SaveOrWarn e v1.1.6](revisoes/2026-11-01-claude-r14h-saveorwarn-116.md) |
 
-## Revisão concluída — codex, 2026-11-01
+## O que revisar
 
-- Revisados `cd018a2` e `0f56c5b`; excluído o próprio `da084b1`. **R14-H confirmado como corrigido**: um diálogo na primeira abertura tanto com arquivo danificado quanto com bloqueio após Resolve, além do controle positivo.
-- Build próprio: **0 erros, 16 avisos**. Suíte: **270 passaram, 0 falharam**, 1 min 9 s. Roteiros anteriores: **28 + 42 verificações e 9 casos**. [Roteiro novo](revisoes/evidencias/2026-11-01-r14h-saveorwarn.ps1): **6 casos**, verificando temas claro/escuro, Load único, Start com/sem pré-carga e SaveOrWarn com arquivo preso e nova tentativa.
-- Nenhuma dependência quebrada da ordem antiga demonstrada. `SaveOrWarn` foi extraído sem alteração do corpo, com Dispatcher/MessageBox simulados e persistência Core; não é teste de clique WPF. As sete chamadas e os callbacks de persistência obrigatória foram inspecionados. Limites D-032 a D-034 e avisos repetidos continuam declarados, sem novo dano demonstrado.
-- Logs dos CIs Conferencia `41266843058`, Linux `41266090925` e Publicar `41267072095` consultados: verdes. Tag/Release v1.1.6 em `0f56c5b`; três pacotes baixados, hashes, conteúdo, arquiteturas e licenças conferidos sem executar binários.
-- Relato do autor transmitido pelo usuário: SALVAR CHAVE avisou com arquivo preso e continuou aberto. Uma navegação fechou em Sensores com código 0, outras três foram limpas, sem falha nos eventos que o autor consultou. **Não encontrei caminho de encerramento automático ligado à página; causa continua não confirmada**, registrada em TAREFAS. Não repeti esses testes no PC.
-- Sem abrir InfoPC.exe ou alterar o sistema; sem push/publicação. Relatório e coordenação **aguardam leitura do claude**. Nenhuma correção de produto.
-
-## Entrega revisada
-
-Intervalo: `git log --no-merges --oneline 10509b2..0f56c5b` e `git diff da084b1 0f56c5b`. Só os commits do claude. Os itens abaixo preservam o registro do autor; resultados próprios e limites estão no relatório acima.
+`git log --no-merges --oneline 0f56c5b..main`. Só os commits do claude: `454eff9` é o relatório do próprio codex, e `86e2976` só registra a exclusão do repositório antigo.
 
 A história anterior a `8271e68` fica só nesta máquina, em `refs/historico-privado/main`, com os drivers retirados. Nunca a envie (AGENTS.md, seção 4).
 
 ## O que foi feito
 
-| Commit | O quê |
-|--------|-------|
-| `cd018a2` | **R14-H.** `Services.LoadSettings` antes de olhar `FolderNotice`, na janela Linux. **`SaveOrWarn`** nas sete chamadas sem proteção do Windows: avisa em vez de deixar a exceção fechar o programa. Versão 1.1.6 |
-| `0f56c5b` | Resposta no relatório, NOVIDADES, README, LINUX, ARQUITETURA e `colab/` |
+O usuário pediu para continuar até o fim. Ele apagou `victorhoura/InfoPC-antigo`, e sobraram na lista três defeitos de software, que já vinham do original.
+
+- **Sensores em etapas (D-035):** `SensorMonitor` abre primeiro o que é rápido, e memória e discos em segundo plano, em objetos `Computer` separados. As categorias novas entram pelo timer (`AddNewSensorChips`).
+- **Campos em branco:** a biblioteca chama os núcleos de `CPU Core #1`, e o código procurava `Core #`. `CpuCoreClocks` aceita os dois, nos três lugares. O Gargalo descartava as linhas `Thread`, as únicas com SMT.
+- **Correção de registro:** os "92 °C em repouso" dos registros anteriores não eram repouso.
 
 ## Como verificar
 
 - **Windows:** `dotnet build InfoPC.csproj -c Release -nologo --no-incremental` → 0 erros, 16 avisos (linha de base).
-- **Linux, rodando no Windows:** `dotnet test linux/tests/InfoPC.Tests/InfoPC.Tests.csproj -c Release` → 270 passando (eram 268).
-- **Roteiros do codex:** `r14-dados` → 28 verificações; `r14de-dados` → 42; `r14fg-dados` → diálogo presente nos dois casos.
-- **[Conferencia 41266843058](https://github.com/victorhoura/InfoPC/actions/runs/41266843058)** e **[Linux 41266090925](https://github.com/victorhoura/InfoPC/actions/runs/41266090925)**, em `cd018a2`, verdes.
+- **Linux, rodando no Windows:** `dotnet test linux/tests/InfoPC.Tests/InfoPC.Tests.csproj -c Release` → 270 passando. A edição Linux só mudou de versão.
+- **PC real, com o build deste commit, dirigido por UIAutomation:** janela em 1,5 s; primeiro sensor em 2,7 s (eram 74,8 s); 133 sensores aos 5 s, 211 aos 11 s (memória), 222 aos 75 s (discos); janela respondendo o tempo todo; categorias novas Timing e Fator apareceram sozinhas. Clock da CPU na Visão geral, "núcleo 6" no Gargalo, temperatura do disco na página Discos.
+- **Duas instâncias de `Computer` ao mesmo tempo:** roteiro próprio com a mesma biblioteca: 62 leituras da CPU durante a abertura dos discos, 0 nulas e 0 erros.
+- **Temperatura, 60 s em uso leve (carga de 17%):** CPU mínima 58 °C, média 63,5 °C, máxima 73 °C.
 - **Não verificado (honestidade):**
-  - **`SaveOrWarn` clicado no PC real:** resultado positivo informado pelo autor via usuário, registrado acima; não repetido pelo revisor.
+  - **CPU AMD:** o nome `Core #` foi mantido por compatibilidade, sem testar; os nomes de hoje vêm da biblioteca lida no i5-10400.
+  - **Abrir e fechar o programa enquanto os discos ainda detectam:** o fechamento normal foi testado só depois dos 110 s.
   - **Linux em PC físico:** sensores, S.M.A.R.T. e GPU de verdade. Janela de senha do polkit fechada pelo usuário (126) só está simulada.
   - **FPS com chave:** não há chave da HowManyFPS. **Sem hardware aqui:** Integração RGB e placas Arduino conectadas.
-  - **Não clicado de propósito no PC real:** instalar driver NVIDIA, Windows Update, OTIMIZAR, APLICAR do Overclock, Instalar apps, remover dispositivos e liberar números COM, stress longo. A CPU chega a 100 °C aqui.
-  - **Termos das licenças:** texto da Silicon Labs de uma cópia antiga; lista de distribuíveis do DXIL não localizada. Não é parecer jurídico.
+  - **Não clicado de propósito no PC real:** instalar driver NVIDIA, Windows Update, OTIMIZAR, APLICAR do Overclock, Instalar apps, remover dispositivos e liberar números COM, stress longo.
+  - **Fechamento em Sensores:** uma passada da v1.1.6 terminou com código 0, sem causa confirmada; não voltou a acontecer.
 
 ## Riscos e onde olhar com mais atenção
 
-- **`MainWindow.cs` e `Services.cs` no Linux:** `Load` e `ApplyTheme` agora rodam antes de `StartAsync`, e `StartAsync` não recarrega. Veja se algo dependia da ordem antiga.
-- **`SaveOrWarn`:** vários avisos seguidos se muitas gravações falharem, por exemplo ao mexer no overlay com o arquivo preso.
-- **Limites aceitos (D-032 a D-034):** entre duas cópias de versões anteriores ainda vale a data, com tolerância de 2 s; passar de 256 gravações sem sincronizar conta como divergência, com aviso; voltar a uma versão anterior e gravar lá faz essa cópia perder para a que tem trilha; a antiga pasta `dados` nunca é movida, e divergência com ela repete o aviso; pasta em uso ilegível continua sendo devolvida, com aviso; depois de um `Load` que falhou, a volta aos registros guardados em `.corrompido` é manual.
+- **Duas instâncias de `Computer`:** a biblioteca tem estado estático (mutex, driver PawnIO). `Close` de uma pode afetar a outra; só acontece ao fechar o programa. Veja `Dispose` e fechar durante a detecção.
+- **`Refresh` na thread da janela:** a primeira leitura dos discos levou 1,9 s isolada e pode dar um engasgo único. Já era assim, só que dentro dos 75 s.
+- **Quem contava com tudo pronto depois de `OpenAsync`:** `DiskHealth` e a RAM do Gargalo ficam sem esses dados até a etapa chegar, como antes.
+- **Stress e OC:** o corte por temperatura da CPU agora vale desde os primeiros segundos; antes de 75 s, o programa dizia que não havia sensor.
+- **Limites aceitos (D-032 a D-034):** continuam como no HANDOFF anterior.
