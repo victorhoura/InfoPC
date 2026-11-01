@@ -4,62 +4,55 @@
 
 | Campo | Valor |
 |---|---|
-| Última entrega por | codex |
+| Última entrega por | claude |
 | Data | 2026-11-01 |
-| Assunto | Estabilidade Linux e v1.1.8 — **aguarda revisão cruzada do claude** |
-| Último commit revisado | `547b845a6c628720df2945b5da68a641fcd02ed2` (codex, 2026-11-01, ajuste documental do claude) |
-| Veredito da última revisão | **APROVADO** — [ajuste de memória](revisoes/2026-11-01-claude-memoria-documentacao.md); sensores/v1.1.7 no [relatório anterior](revisoes/2026-11-01-claude-sensores-117.md) |
+| Assunto | Revisão da v1.1.8 do codex e correções da v1.1.9 — **aguarda revisão cruzada do codex** |
+| Último commit revisado | `3e216eaa4181bf2b2c531c2ce8a70140150138e0` (claude, 2026-11-01, entrega de estabilidade do codex) |
+| Veredito da última revisão | **APROVADO COM RESSALVAS** — [relatório](revisoes/2026-11-01-codex-estabilidade-linux-118.md) |
 
-## Pedido e diagnóstico
+## Pedido
 
-Victor testou no Linux e relatou travamentos, congelamentos e fechamento sozinho. Pediu correção, GitHub, Obsidian e comando de atualização. Sem log, distribuição, GPU ou sequência de cliques no relato, não se atribui todo o ocorrido a uma causa única.
+O Victor pediu ao codex a correção dos travamentos, congelamentos e fechamento no Linux, e depois pediu ao claude para verificar se ficou corrigido. O pedido original também incluía GitHub, Obsidian e o comando de atualização no terminal.
 
-Reproduções antes das respectivas correções:
+## Resultado da verificação
 
-- Voltar à página GPU: InvalidOperationException de controle ainda com pai visual anterior, em GpuPage.Rebuild; erro de async void capaz de encerrar o app.
-- Janela ocupada por 3,2 s: três atualizações de sensores em rajada; o produtor não aguardava a interface.
-- Assinante de Tick com exceção: o próximo monitor não era chamado.
-- Fechar principal com stress/overlay: a carga permanecia ativa quando os sensores já seriam cancelados.
+As correções do codex estão certas e sem regressão encontrada: 277 testes passaram na minha execução, sobre `3e216ea`. Ficaram de fora outros caminhos com o mesmo sintoma, agora corrigidos em `13551d2`.
 
-## O que mudou
+**A causa do caso real do Victor continua desconhecida.** O relato não tem log, distribuição nem GPU, e nada foi repetido naquele computador.
 
-- GPU: painel novo de extras por reconstrução, geração para descartar consultas atrasadas e consultas ao driver em worker, sem sobreposição. Sliders do OC preservam suas linhas para não ganhar dois pais.
-- Sensores: coleta e detecção de dispositivos em worker, aguardo do dispatcher e cancelamento ao fechar. Erro síncrono de uma página não pula a segurança dos outros assinantes.
-- Energia/Visão geral: snapshots na UI evitam ler a lista/dicionário mutáveis do hub no worker.
-- Encerramento: a principal controla o lifetime; todas as páginas recebem OnClosed antes de Services.Stop, inclusive ocultas. Stress CPU/RAM/GPU para, benchmarks/OC são cancelados, overlay e integração fecham. GpuStress vincula o processo ao token mesmo na corrida Start/Stop.
-- Diagnóstico: erros.log local e limitado, com rotação, sem envio e sem mascarar erro fatal globalmente.
-- Versão comum 1.1.8; [investigação detalhada](../docs/LINUX-ESTABILIDADE.md), notas e comando de atualização.
+## O que mudou (`13551d2`)
+
+- **R16-A, reproduzido:** exceção em ação de página (`async void`) encerrava o programa. Falha isolada agora vai para `erros.log` e a janela avisa no alto da página. Falta de memória ou mais de 5 erros em 10 s ainda encerram.
+- **R16-B, por leitura:** o stress de RAM media a memória só no início. Agora confere antes de cada bloco e devolve memória abaixo da reserva (5% da RAM, mínimo 512 MB). Os blocos passaram para memória nativa. Vale também para o verificador de estabilidade, que usa o mesmo `StressTester`.
+- **R16-C, por leitura:** o `statfs` das montagens saiu da thread da janela em Discos.
+- **R16-D, por leitura:** a leitura de `/proc/*/cmdline` saiu da thread da janela em Overlay e Gargalo.
+- **R16-E, por leitura:** `Thread.Priority` não vale no Linux; as threads de carga usam nice 10.
+- `RunCpu`, `RunSim`, `RunGpu` e o verificador tratam erro comum, sem deixar `Busy` preso. No verificador, erro do programa dá resultado inconclusivo.
+- Versão 1.1.9. A edição Windows só mudou o número da versão.
 
 ## Verificação
 
-Suíte final repetida após o ajuste de inicialização: **277 testes passaram, 0 falhas**, em 1 min 53 s, no Windows com Avalonia/Skia headless. `dotnet run --project linux/tests/InfoPC.StartupProbe -c Release` também passou. O aviso xUnit2031 de GamesTests já existia.
+- Linux, no Windows: `dotnet test linux/tests/InfoPC.Tests/InfoPC.Tests.csproj -c Release --nologo --blame-hang-timeout 120s` → **281 passaram, 0 falhas**, 1 min 54 s.
+- `dotnet run --project linux/tests/InfoPC.StartupProbe -c Release` → passou.
+- Windows: `dotnet build InfoPC.csproj -c Release -nologo --no-incremental -v quiet` → 0 erros, 16 avisos conhecidos.
+- `Stress_threads_yield_to_the_desktop_on_linux` não testa nada no Windows: a verificação real é no CI Linux.
+- As correções R16-C e R16-D não têm teste próprio: só a suíte de páginas confirma que continuam funcionando, sem unidade de rede caída nem processo em swap.
+- `Drivers/`, `LICENSE` e `THIRD-PARTY-NOTICES.txt` intactos; sem dependência nova, banco ou migração.
 
-- Windows: `dotnet build InfoPC.csproj -c Release -nologo --no-incremental -v quiet` → 0 erros, 16 avisos conhecidos, versão 1.1.8.
-- Linux: `dotnet test linux/tests/InfoPC.Tests/InfoPC.Tests.csproj -c Release --nologo --logger 'console;verbosity=minimal' --logger 'trx;LogFileName=linux-118.trx' --blame-hang-timeout 60s`.
-- As 21 páginas são percorridas duas vezes por fixture Intel, AMD e ARM, com render; regressões incluem retorno/saída rápida da GPU, fila limitada, assinante falho e fechamento com stress/overlay.
-- Nome antigo: seis termos, 0 ocorrências inesperadas. git diff --check limpo. Drivers/, LICENSE e avisos intactos; nenhuma dependência nova, banco ou migração. Windows só mudou de versão.
+## Onde o revisor deve olhar
 
-## Publicação e revisão
-
-A tentativa inicial `41349512015` em `56f08c6` foi bloqueada nos dois pacotes Linux: o novo diagnóstico acessava o dispatcher antes de existir plataforma. O probe em processo separado reproduziu `SupportsRunLoops == false`; a inscrição de UI foi movida para `OnFrameworkInitializationCompleted`. `InfoPC.StartupProbe` passou depois da correção e agora é exigido pelo CI. O rascunho falho não foi publicado. A suíte headless comum, que já monta a plataforma antes dos testes, não cobria essa ordem de entrada.
-
-Código integrado e enviado em `56f08c6` e `58f82a3`; SHA remoto conferido. [Release v1.1.8](https://github.com/victorhoura/InfoPC/releases/tag/v1.1.8) publicada como pré-lançamento, tag em `58f82a30af1e2d6b6ab7740c2efd4fe26705c9a7`. [Linux 41350090896](https://github.com/victorhoura/InfoPC/actions/runs/41350090896) e [Publicar 41350094350](https://github.com/victorhoura/InfoPC/actions/runs/41350094350) concluídos com sucesso: 277 testes em cada Ubuntu (22.04/24.04), probe, cinco gerenciadores reais, binários x64/arm64 abertos por 25 s em Xvfb e Windows aberto por 40 s. Pacote x64 também roda em cinco distribuições. Captura arm64 inspecionada: janela renderizada com dados e versão 1.1.8.
-
-Três pacotes baixados: SHA-256 igual ao manifesto, executáveis ELF x64/arm64 e PE x64, quatro arquivos esperados com licenças. Página pública e download x64 responderam HTTP 200 sem login. Hashes completos em `docs/LINUX-ESTABILIDADE.md`. Não há banco/migração, website ou serviço a implantar. História privada mantida só local; push apenas de main.
-
-Obsidian é a última etapa desta sessão: atualizar a nota do projeto e criar a nota substantiva de estabilidade/publicação em `Trabalho/Programação/Projetos/InfoPC`, preservando o estado histórico. A conclusão dessa escrita será conferida no próprio cofre.
-
-Revisão técnica auxiliar somente leitura encontrou os cuidados de Tick/fechamento/snapshot e confirmou o diff corrigido, sem bloqueador remanescente demonstrado; sem build/testes pelo auxiliar. **Não substitui a revisão cruzada do claude.**
-
-O revisor deve conferir descarte por geração, cancelamento enquanto detecção/benchmark termina, ordem OnClosed/Stop, GpuStress e segurança do stress. Navegar normalmente continua mantendo o stress ativo; os limites térmicos não mudaram.
+- `CrashLog.CanContinue`: se o limite de 5 erros em 10 s é adequado, e o que acontece com erro repetido em layout ou desenho. Só a contagem foi testada, não um erro real de layout.
+- `StressTester.KeepHeadroom`: o índice ao remover blocos durante as passadas e a integridade da verificação depois de reduzir.
+- `setpriority` com `who = 0`: vale só para a thread no Linux, e o teste confere isso no CI.
+- Decisão de seguir aberto depois de uma exceção: o estado da página pode ficar parcial até reabrir. Considerei melhor que encerrar e abandonar a carga de GPU, mas é mudança em relação à escolha do codex de não recuperar globalmente.
 
 ## Limites e pendências
 
-- Repetir no Linux que apresentou o problema. NVIDIA, S.M.A.R.T. e drivers físicos não foram exercitados neste Windows; Linux real no CI e tela virtual validarão os pacotes.
-- Sinais nativos, falhas de driver e OOM killer podem não passar pelo log gerenciado.
+- Repetir no Linux que apresentou o problema (Victor). Se voltar a fechar, os dados úteis são `erros.log`, a saída de `infopc` no terminal e `journalctl -b --no-pager | tail -100`.
+- Lista completa do que continua sem cobertura no [relatório](revisoes/2026-11-01-codex-estabilidade-linux-118.md).
 - Pendências históricas de hardware, API, RGB/Arduino e limites D-032 a D-034 permanecem na fila.
 
-Comando para instalação pelo clone em ~/InfoPC, após fechar a janela:
+Comando para instalação pelo clone em ~/InfoPC:
 
 ```bash
 git -C "$HOME/InfoPC" pull --ff-only && bash "$HOME/InfoPC/linux/instalar.sh" --yes

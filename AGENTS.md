@@ -14,7 +14,7 @@ Se uma regra mudar, mude aqui. Não duplique regras em outros arquivos.
 - **InfoPC** é um software **portátil** para Windows e Linux: um único executável (.exe no Windows, binário ELF no Linux) que roda direto da pasta, sem instalador de sistema. As duas edições (WPF na raiz, Avalonia em `linux/`) têm as mesmas áreas do menu (D-017).
 - **Não existe website** do produto, nem haverá.
 - Base: **RESET EXPLODE v0.16** (C# / WPF / .NET 8, licença MIT), importado e renomeado para **InfoPC 1.0**. É uma ferramenta de diagnóstico e ajuste do PC: informações do sistema, sensores, benchmarks, stress test, jogos, otimização, drivers. Origem, licença e renomeação: `docs/UPSTREAM.md`. Mapa do código e comandos: `docs/ARQUITETURA.md`.
-- **Fase atual:** InfoPC 1.1.8 publicada como pré-lançamento, com correções de estabilidade após o usuário relatar travamentos no Linux (`docs/LINUX-ESTABILIDADE.md`). Aguardam a revisão cruzada do claude e a repetição no Linux físico que apresentou o problema. Requisitos da Fase 3 implementados/revisados; limites e testes pendentes em `colab/TAREFAS.md`. A revisão de sensores Windows/v1.1.7 foi aprovada pelo codex.
+- **Fase atual:** InfoPC 1.1.9 em pré-lançamento, com correções de estabilidade após o usuário relatar travamentos no Linux (`docs/LINUX-ESTABILIDADE.md`). A 1.1.8 do codex foi revisada pelo claude; as correções adicionais da 1.1.9 aguardam a revisão cruzada do codex e a repetição no Linux físico que apresentou o problema. Requisitos da Fase 3 implementados/revisados; limites e testes pendentes em `colab/TAREFAS.md`. A revisão de sensores Windows/v1.1.7 foi aprovada pelo codex.
 
 ## 2. Requisitos do produto
 
