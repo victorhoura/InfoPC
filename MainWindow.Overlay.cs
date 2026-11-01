@@ -38,7 +38,7 @@ public partial class MainWindow
     private void SaveOverlayItems()
     {
         _settings.OverlayItems = OverlayMetrics.All.Select(m => m.Key).Where(OvShow.Contains).ToList();
-        _settings.Save();
+        SaveOrWarn();
         UpdateOverlay();
     }
 

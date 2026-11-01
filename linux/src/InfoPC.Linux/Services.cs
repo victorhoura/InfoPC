@@ -62,6 +62,7 @@ public sealed class Services
     private int _deviceTick;
 
     private bool _started;
+    private bool _settingsLoaded;
     private CancellationTokenSource _cts = new();
     private TaskCompletionSource _ready = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
@@ -74,11 +75,20 @@ public sealed class Services
         _cts.Cancel();
         _cts = new CancellationTokenSource();
         _ready = new(TaskCreationOptions.RunContinuationsAsynchronously);
-        _started = false; Ready = false; Paused = false;
+        _started = false; _settingsLoaded = false; Ready = false; Paused = false;
         Settings = new AppSettings(); Hub = new SensorHub(); Gpus = Array.Empty<GpuDevice>(); MainGpu = null; Disks = Array.Empty<PhysicalDisk>();
         Cpu = null; Os = null; Dmi = null; Ram = null; Smart = null;
         History.Clear();
         Loaded = null; Tick = null; DeviceChanged = null;
+    }
+
+    /// <summary>Carrega uma vez só. A janela chama antes de StartAsync: o aviso de um Load que falhou precisa existir quando ela olha se há o que mostrar.</summary>
+    public void LoadSettings()
+    {
+        if (_settingsLoaded) return;
+        _settingsLoaded = true;
+        Settings = AppSettings.Load();
+        ApplyTheme(Settings.LightTheme);
     }
 
     public async Task StartAsync()
@@ -86,8 +96,7 @@ public sealed class Services
         if (_started) return;
         _started = true;
         var token = _cts.Token;
-        Settings = AppSettings.Load();
-        ApplyTheme(Settings.LightTheme);
+        LoadSettings();
 
         await Task.Run(() =>
         {

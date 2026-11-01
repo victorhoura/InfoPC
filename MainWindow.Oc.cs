@@ -520,7 +520,7 @@ public partial class MainWindow
         obj[4] = (string)obj3;
         string summary = string.Concat(obj);
         _settings.BenchRecords.Insert(0, new BenchRecord(DateTime.Now, "oc", flag4 ? 1.0 : 0.15, summary));
-        _settings.Save();
+        SaveOrWarn();
         UpdateOcHistory();
         UpdateRecentErrors();
     }

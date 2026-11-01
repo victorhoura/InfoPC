@@ -43,6 +43,43 @@ public class UiTests
         return w;
     }
 
+    [AvaloniaTheory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task A_settings_file_that_fails_to_load_is_explained_on_the_first_opening(bool damaged)
+    {
+        // R14-H: o aviso nasce no Load, e a janela precisa olhar depois dele
+        using var fx = Fx.Use("intel-desktop");
+        string before = AppSettings.Folder;
+        var noticeProperty = typeof(AppSettings).GetProperty(nameof(AppSettings.FolderNotice))!;
+        noticeProperty.SetValue(null, null);
+        string dir = Directory.CreateTempSubdirectory("infopc-aviso").FullName;
+        string file = Path.Combine(dir, "settings.json");
+        File.WriteAllText(file, damaged ? "{ quebrado" : "{\"GroupsAdded\":[\"desfazer\"]}");
+        FileStream? held = damaged ? null : new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.None);
+        AppSettings.Folder = dir;
+        MainWindow? w = null;
+        try
+        {
+            w = await OpenAsync();
+            Assert.Contains("Não consegui ler", AppSettings.FolderNotice);
+            Assert.Single(w.OwnedWindows, o => o.Title == "Pasta de dados");
+        }
+        finally
+        {
+            held?.Dispose();
+            if (w != null)
+            {
+                foreach (var o in w.OwnedWindows.ToArray()) o.Close();
+                w.Close();
+            }
+            Services.Current.ResetForTests();
+            noticeProperty.SetValue(null, null);
+            AppSettings.Folder = before;
+            Directory.Delete(dir, true);
+        }
+    }
+
     private static string? ShotsDir => Environment.GetEnvironmentVariable("INFOPC_SHOTS") is { Length: > 0 } d ? d : null;
 
     [AvaloniaTheory]

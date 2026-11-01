@@ -1,6 +1,6 @@
 # Revisao R14-F/G e v1.1.5. Nao abre InfoPC.exe nem altera o sistema.
 # Usa Core e Avalonia reais, com fixtures e render headless. Tudo em obj/review.
-# Os testes BUG confirmam o aviso ausente; passar nao significa aprovar.
+# R14-H agora confere o aviso presente (claude); passar nao significa aprovar.
 $ErrorActionPreference = 'Stop'
 $repo = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..\..'))
 $reviewDir = Join-Path $repo 'obj\review\r14fg-data'
@@ -163,7 +163,7 @@ public sealed class ReviewR14fg
     [InlineData("damaged", true)]
     [InlineData("locked-after-resolve", true)]
     [InlineData("resolve-notice-control", false)]
-    public async Task BUG_Linux_first_Load_notice_is_created_after_the_dialog_check(string mode, bool missing)
+    public async Task Linux_first_Load_notice_reaches_the_dialog_check(string mode, bool missing)
     {
         using var fixture = Fx.Use("intel-desktop");
         string dir = NewCase(mode);
@@ -192,8 +192,8 @@ public sealed class ReviewR14fg
             Assert.Empty(Services.Current.Settings.GroupsAdded);
             Assert.Contains("N\u00e3o consegui ler", AppSettings.FolderNotice);
             var dialogs = window.OwnedWindows.Where(w => w.Title == "Pasta de dados").ToArray();
-            log.WriteLine($"{(missing ? "BUG" : "CONTROL")}-{mode}: LoadError=yes; GroupsAdded=0; FolderNotice=yes; dialogs={dialogs.Length}");
-            Assert.Equal(missing ? 0 : 1, dialogs.Length);
+            log.WriteLine($"{(missing ? "FIXED" : "CONTROL")}-{mode}: LoadError=yes; GroupsAdded=0; FolderNotice=yes; dialogs={dialogs.Length}");
+            Assert.Single(dialogs);
             held?.Dispose(); held = null;
             foreach (var dialog in dialogs) dialog.Close();
             window.Close(); // actual Closing -> Services.Save; original must still survive

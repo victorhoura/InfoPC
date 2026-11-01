@@ -497,7 +497,7 @@ public partial class MainWindow : Window
     private void BtnApiKey_Click(object sender, RoutedEventArgs e)
     {
         _settings.HowManyFpsKey = ApiKeyBox.Password;
-        _settings.Save();
+        SaveOrWarn();
         _fpsApi.ApiKey = _settings.HowManyFpsKey;
         _fpsRequested = _fpsApi.Configured; // salvar a chave é pedir os dados reais
         RefreshGames();
@@ -793,7 +793,7 @@ public partial class MainWindow : Window
         _settings.BenchRuns.Insert(0, new BenchRun(DateTime.Now, mt, st, sustained, GameCatalog.ShortCpuName(_cpuName)));
         AddEvent("", "Benchmark", "Render de CPU", mt is double mte ? $"{mte:N0} pts" : st is double ste ? $"{ste:N0} pts" : "");
         if (_settings.BenchRuns.Count > 10) _settings.BenchRuns.RemoveRange(10, _settings.BenchRuns.Count - 10);
-        _settings.Save();
+        SaveOrWarn();
         UpdateBenchHistory();
     }
 
@@ -1041,6 +1041,18 @@ public partial class MainWindow : Window
         ScanUsb();
     }
 
+    /// <summary>Para preferências e históricos: não dá para gravar (arquivo preso, pasta sem permissão), mas isso não pode fechar o programa, e o arquivo no disco continua como estava.</summary>
+    private void SaveOrWarn()
+    {
+        try { _settings.Save(); }
+        catch (Exception ex)
+        {
+            Dispatcher.BeginInvoke(() => MessageBox.Show(this,
+                $"Não consegui gravar as configurações: {ex.Message}\n\nO que você acabou de mudar vale até fechar o InfoPC. Feche o programa que pode estar usando o arquivo, e a próxima gravação leva tudo.",
+                "InfoPC", MessageBoxButton.OK, MessageBoxImage.Warning));
+        }
+    }
+
     private void BtnComDbRestore_Click(object sender, RoutedEventArgs e)
     {
         if (_settings.ComDbBackup == null || !RequireAdmin()) return;
@@ -1130,7 +1142,7 @@ public partial class MainWindow : Window
         // Mantém os 10 mais recentes de cada teste.
         _settings.BenchRecords = _settings.BenchRecords.GroupBy(r => r.Test).SelectMany(g => g.Take(10))
                                           .OrderByDescending(r => r.Date).ToList();
-        _settings.Save();
+        SaveOrWarn();
         UpdateGameBenchHistory();
     }
 
@@ -1380,7 +1392,7 @@ public partial class MainWindow : Window
         if (!_overlayReady) return;
         _settings.OverlayCorner = CheckedTag(OvCornerPanel) ?? "TL";
         _settings.OverlayScale = double.Parse(CheckedTag(OvScalePanel) ?? "1", CultureInfo.InvariantCulture);
-        _settings.Save();
+        SaveOrWarn();
         ApplyOverlayOptions();
     }
 

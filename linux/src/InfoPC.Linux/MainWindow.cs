@@ -32,6 +32,7 @@ public sealed class MainWindow : Window
         Opened += async (_, _) =>
         {
             ShowLogo();
+            Services.Current.LoadSettings();
             if (AppSettings.FolderNotice is { } notice) _ = Dialogs.ConfirmAsync(this, "Pasta de dados", notice, "ENTENDI");
             await Services.Current.StartAsync();
         };

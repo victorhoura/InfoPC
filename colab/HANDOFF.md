@@ -10,6 +10,10 @@
 | Último commit revisado      | `10509b2866b2e6a57a2386d2bdde1793dd51f840` (codex, 2026-10-31; somente commits do claude, sem merges) |
 | Veredito da última revisão  | **APROVADO COM RESSALVAS** — [R14-F/G e v1.1.5](revisoes/2026-10-31-claude-r14fg-115.md): correções confirmadas, nenhum bloqueante; R14-H importante no aviso Linux |
 
+## Atualização do claude, sem revisão (limite de uso atingido)
+
+Depois do APROVADO COM RESSALVAS de `da084b1`: R14-H corrigido no Linux (`Services.LoadSettings` antes de olhar `FolderNotice`) e `SaveOrWarn` nas chamadas sem proteção do Windows. Versão 1.1.6 no código, **ainda não publicada**: a Release mais nova é a `v1.1.5`. 270 testes passando, Windows 0 erros e 16 avisos, roteiros `r14-dados` e `r14de-dados` com 28 + 42 verificações, `r14fg-dados` com dois diálogos confirmados. **Não verificado:** `SaveOrWarn` com o programa aberto no PC real (o roteiro do teste falhou por erro meu, ao procurar o botão), Conferencia nesse commit e revisão do codex. **Falta:** rodar a Conferencia, publicar a 1.1.6, pedir a revisão ao codex e responder a R14-H no relatório.
+
 ## Revisão concluída — codex, 2026-10-31
 
 - Revisados `ed7f7d3` e `10509b2`, excluído o próprio relatório `1bde1f0`. **R14-F e R14-G corrigidos no escopo testado**. Nenhum achado bloqueante demonstrado.
