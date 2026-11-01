@@ -14,6 +14,7 @@ public sealed class DisksPage : PageBase
     private readonly StackPanel _list = new() { Spacing = 14 };
     private readonly StatusText _status = new();
     private readonly Button _smartBtn;
+    private List<MountInfo> _orphans = new();
 
     public DisksPage()
     {
@@ -35,7 +36,17 @@ public sealed class DisksPage : PageBase
     private async void Reload()
     {
         if (!S.Ready) { _list.Children.Clear(); _list.Children.Add(Ui.Muted("Detectando o hardware…")); return; }
-        await S.RefreshDisksAsync();
+        try
+        {
+            await S.RefreshDisksAsync();
+            // statfs de uma unidade de rede caída espera indefinidamente: nunca na thread da janela
+            _orphans = await Task.Run(() => DiskCollector.Mounts().Where(m => m.Disk == null && m.TotalBytes > 0).ToList());
+        }
+        catch (Exception ex)
+        {
+            CrashLog.Write("Discos", ex);
+            _status.Text = "Não consegui reler as unidades: " + ex.Message;
+        }
         Rebuild();
     }
 
@@ -60,11 +71,10 @@ public sealed class DisksPage : PageBase
             _list.Children.Add(HealthCardView.Create(cards[i], extras.ToArray()));
         }
         // montagens sem disco físico (rede, LVM sem mapa, sistemas virtuais de arquivos reais)
-        var orphans = DiskCollector.Mounts().Where(m => m.Disk == null && m.TotalBytes > 0).ToList();
-        if (orphans.Count > 0)
+        if (_orphans.Count > 0)
         {
             var rows = new StackPanel { Spacing = 10 };
-            foreach (var m in orphans)
+            foreach (var m in _orphans)
             {
                 var head = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto") };
                 var name = new TextBlock { Text = $"{m.MountPoint}  ·  {m.FsType}  ·  {m.Device}", FontSize = 13, TextTrimming = TextTrimming.CharacterEllipsis };

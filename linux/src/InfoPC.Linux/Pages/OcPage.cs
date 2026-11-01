@@ -173,6 +173,12 @@ public sealed class OcPage : PageBase
             }
         }
         catch (OperationCanceledException) { }
+        catch (Exception ex)
+        {
+            // erro do programa não é instabilidade do hardware: o veredito fica inconclusivo
+            CrashLog.Write("Verificador de estabilidade", ex);
+            noLoad = "o teste parou por um erro do programa (" + ex.Message + ")";
+        }
         finally { stress.Stop(); gstress.Stop(); _checkStress = null; _checkGpuStress = null; }
 
         bool cancelled = ct.IsCancellationRequested && failure == null;

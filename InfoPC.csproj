@@ -10,7 +10,7 @@
     <ApplicationIcon>Assets\app.ico</ApplicationIcon>
     <AssemblyName>InfoPC</AssemblyName>
     <Product>InfoPC</Product>
-    <Version>1.1.8</Version>
+    <Version>1.1.9</Version>
     <!-- Sempre otimizado: o Benchmark e os stress tests precisam do JIT otimizado também em Debug -->
     <Optimize>true</Optimize>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>

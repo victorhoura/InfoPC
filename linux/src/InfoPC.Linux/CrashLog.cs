@@ -7,6 +7,13 @@ internal static class CrashLog
 {
     private static readonly object Gate = new();
 
+    internal const int BurstLimit = 5;
+    internal const long BurstWindowMs = 10_000;
+    private static readonly Queue<long> Burst = new();
+
+    /// <summary>Uma ação da interface falhou e o programa continuou; o texto é o caminho do registro. Chamado na thread da tela.</summary>
+    public static event Action<string>? Recovered;
+
     // Não acesse Dispatcher.UIThread aqui: antes do AppBuilder ele fica ligado ao NullDispatcherImpl.
 
     public static void Install()
@@ -19,7 +26,33 @@ internal static class CrashLog
     }
 
     public static void InstallDispatcher() =>
-        Dispatcher.UIThread.UnhandledException += (_, e) => Write("Interface", e.Exception);
+        Dispatcher.UIThread.UnhandledException += (_, e) =>
+        {
+            Write("Interface", e.Exception);
+            if (!CanContinue(e.Exception, Environment.TickCount64)) return;
+            e.Handled = true;
+            Recovered?.Invoke(Path.Combine(AppSettings.Folder, "erros.log"));
+        };
+
+    /// <summary>
+    /// Falha isolada numa ação de página não fecha o programa (o stress em andamento segue com seus limites de segurança, que encerrar o processo abandonaria).
+    /// Falta de memória ou uma rajada, típica de erro em todo layout ou desenho, encerra: repetir para sempre seria travar a janela.
+    /// </summary>
+    internal static bool CanContinue(Exception ex, long nowMs)
+    {
+        if (ex is OutOfMemoryException or AccessViolationException) return false;
+        lock (Gate)
+        {
+            while (Burst.Count > 0 && nowMs - Burst.Peek() > BurstWindowMs) Burst.Dequeue();
+            Burst.Enqueue(nowMs);
+            return Burst.Count <= BurstLimit;
+        }
+    }
+
+    internal static void ResetForTests()
+    {
+        lock (Gate) Burst.Clear();
+    }
 
     public static void Write(string context, Exception ex)
     {

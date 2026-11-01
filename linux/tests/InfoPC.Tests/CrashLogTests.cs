@@ -28,6 +28,20 @@ public class CrashLogTests
     }
 
     [Fact]
+    public void Recovery_stops_when_the_failure_repeats_or_is_fatal()
+    {
+        CrashLog.ResetForTests();
+        var ordinary = new IOException("uma ação falhou");
+        for (int i = 0; i < CrashLog.BurstLimit; i++) Assert.True(CrashLog.CanContinue(ordinary, nowMs: 1000 + i), $"falha {i}");
+        // erro em todo desenho/layout repetiria sem fim: fecha, com o registro já gravado, em vez de travar
+        Assert.False(CrashLog.CanContinue(ordinary, nowMs: 1000 + CrashLog.BurstLimit));
+        // passada a rajada, volta a tolerar falhas isoladas
+        Assert.True(CrashLog.CanContinue(ordinary, nowMs: 1000 + CrashLog.BurstWindowMs + 100));
+        Assert.False(CrashLog.CanContinue(new OutOfMemoryException(), nowMs: 500000));
+        CrashLog.ResetForTests();
+    }
+
+    [Fact]
     public void An_unwritable_log_does_not_cause_another_crash()
     {
         using var fx = Fx.Use("intel-desktop");

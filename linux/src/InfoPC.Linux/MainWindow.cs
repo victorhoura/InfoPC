@@ -19,9 +19,13 @@ public sealed class MainWindow : Window
     private readonly ContentControl _host = new();
     private readonly TextBlock _title = new() { };
     private readonly TextBlock _subtitle = new() { };
+    private readonly TextBlock _errorNotice = Ui.Note("");
     private readonly Image _logo = new() { Width = 34, Height = 34 };
     private PageBase? _current;
     public string? CurrentKey { get; private set; }
+
+    /// <summary>Aviso de uma ação que falhou nesta página ("" sem aviso).</summary>
+    public string ErrorNotice => _errorNotice.IsVisible ? _errorNotice.Text ?? "" : "";
 
     public MainWindow()
     {
@@ -49,13 +53,21 @@ public sealed class MainWindow : Window
                 try { page.OnClosed(); }
                 catch (Exception ex) { CrashLog.Write("Fechamento de página", ex); }
             }
+            CrashLog.Recovered -= ShowErrorNotice;
             Services.Current.Stop();
         };
+        CrashLog.Recovered += ShowErrorNotice;
         Services.Current.DeviceChanged += c =>
         {
             if (Services.Current.Settings.DeviceToasts) ToastWindow.Show(c);
         };
         Navigate(_entries[0].Key);
+    }
+
+    private void ShowErrorNotice(string logFile)
+    {
+        _errorNotice.Text = "Uma ação desta página falhou, mas o programa continuou aberto. Detalhes em " + logFile;
+        _errorNotice.IsVisible = true;
     }
 
     private void TrySetIcon()
@@ -132,7 +144,8 @@ public sealed class MainWindow : Window
         // ---------- área da página ----------
         _title.Classes.Add("h1");
         _subtitle.Classes.Add("sub");
-        var header = Ui.VStack(2, _title, _subtitle);
+        _errorNotice.IsVisible = false;
+        var header = Ui.VStack(2, _title, _subtitle, _errorNotice);
         header.Margin = new Thickness(0, 0, 0, 18);
         var area = new Grid { RowDefinitions = new RowDefinitions("Auto,*"), Margin = new Thickness(30, 26, 12, 0) };
         Grid.SetRow(header, 0);
@@ -154,6 +167,7 @@ public sealed class MainWindow : Window
         if (!_pages.TryGetValue(key, out var page)) _pages[key] = page = entry.Create();
         _current = page;
         CurrentKey = key;
+        _errorNotice.IsVisible = false;
         page.HeaderChanged += RefreshHeader;
         RefreshHeader();
         _host.Content = page;

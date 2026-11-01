@@ -20,6 +20,7 @@ ERROS
 - Desde a 1.1.8, erros.log na pasta de dados guarda detalhes locais de falhas gerenciadas.
   O arquivo tem tamanho limitado, mantem erros.log.anterior e nao e enviado pela internet.
   Um encerramento pelo kernel ou driver nativo pode nao aparecer nesse registro.
+- Desde a 1.1.9, uma acao de pagina que falha nao fecha o programa: aparece um aviso na pagina.
 
 PERMISSÕES
 - O programa abre como usuário comum. Quando uma ação precisa de administrador (S.M.A.R.T., módulos de RAM,

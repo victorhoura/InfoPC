@@ -1,4 +1,26 @@
-# Estabilidade da edição Linux — 1.1.8
+# Estabilidade da edição Linux — 1.1.8 e 1.1.9
+
+## 1.1.9: o que a revisão cruzada acrescentou
+
+O claude revisou a 1.1.8 a pedido do Victor ([relatório](../colab/revisoes/2026-11-01-codex-estabilidade-linux-118.md)). As correções do codex foram confirmadas. Havia outros caminhos com o mesmo sintoma, corrigidos na 1.1.9:
+
+| Sintoma | Caminho | Evidência | Correção |
+|---|---|---|---|
+| Fecha sozinho | Exceção em ação de página (`async void`) sem `try/catch` chega ao laço principal | **Reproduzido**: teste vermelho na 1.1.8, com a pilha até `ManagedDispatcherImpl.RunLoop` | `CrashLog` registra, marca como tratada e a janela avisa. Falta de memória ou mais de 5 erros em 10 s ainda encerram |
+| Congela e depois some | Stress de RAM media a memória só no início; com pouca memória, swap e OOM killer | Por leitura; memória simulada no teste. **Não há evidência de que o Victor usou esse teste** | Confere antes de cada bloco e devolve abaixo da reserva (5% da RAM, mínimo 512 MB); blocos em memória nativa |
+| Congela ao abrir Discos | `statfs` de cada montagem na thread da janela; unidade de rede caída espera indefinidamente | Por leitura | Leitura em worker |
+| Engasgos | `/proc/*/cmdline` na thread da janela a cada 3 s, no Overlay e no Gargalo | Por leitura | Leitura em worker, uma por vez |
+| Disputa com a área de trabalho | `Thread.Priority` não tem efeito no Linux | Por leitura; o efeito não foi medido | `setpriority` (nice 10) só nas threads de carga, conferido pelo teste no Linux do CI |
+
+Encerrar por exceção é pior do que parece: `vkmark` e `glmark2` são processos filhos, e nada os encerra se o InfoPC morrer. A carga de GPU continuaria sem o limite de temperatura. Por isso, seguir aberto é mais seguro do que fechar, quando a falha é isolada.
+
+**Limite.** A causa exata do que aconteceu no computador do Victor continua desconhecida, porque o relato não tem log, distribuição nem GPU. As versões 1.1.8 e 1.1.9 removem defeitos reais com esse sintoma, e só a repetição naquele computador confirma se era algum deles.
+
+Limites que continuam: unidade de rede caída ainda pode prender a detecção inicial em worker (a janela responde, mas os sensores não começam); `OverlayWindow.Lines` e `OcPage.BuildGpuBox` consultam a NVML na thread da janela; falha nativa do driver gráfico não passa pelo `erros.log`.
+
+Resultados da publicação ficam em `colab/HANDOFF.md`.
+
+# 1.1.8
 
 ## Pedido e limites da investigação
 

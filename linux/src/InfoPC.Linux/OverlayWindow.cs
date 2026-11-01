@@ -18,6 +18,7 @@ public sealed class OverlayWindow : Window
     private List<LibGame> _library = new();
     private DateTime _gameAt;
     private string _game = "";
+    private bool _gameBusy;
 
     public OverlayWindow()
     {
@@ -103,13 +104,25 @@ public sealed class OverlayWindow : Window
 
     private static string? Join(params string?[] parts) { var p = parts.Where(x => x != null).ToArray(); return p.Length == 0 ? null : string.Join("  ", p); }
 
+    /// <summary>Ler /proc/*/cmdline espera o processo lido, e um processo em swap demora: nunca na thread da janela.</summary>
+    private async void RefreshGame()
+    {
+        if (_gameBusy) return;
+        var library = _library;
+        if (library.Count == 0) { _game = ""; return; }
+        _gameBusy = true;
+        try { _game = await Task.Run(() => GameDetector.Any(library)?.Name ?? ""); }
+        catch (Exception ex) { CrashLog.Write("Overlay", ex); }
+        finally { _gameBusy = false; }
+    }
+
     public void Update()
     {
         var s = Services.Current;
         if (DateTime.Now - _gameAt > TimeSpan.FromSeconds(3))
         {
             _gameAt = DateTime.Now;
-            _game = _library.Count > 0 ? GameDetector.Any(_library)?.Name ?? "" : "";
+            RefreshGame();
         }
         var lines = Lines(_items, s.Hub, s.MainGpu, _game);
         _lines.Children.Clear();

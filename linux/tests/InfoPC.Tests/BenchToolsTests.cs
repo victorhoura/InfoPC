@@ -259,6 +259,61 @@ public class BenchToolsTests
     }
 
     [Fact]
+    public void Ram_stress_gives_memory_back_before_the_system_runs_out()
+    {
+        const long gb = 1L << 30, chunk = 128L << 20;
+        long available = 2 * gb;
+        var s = new StressTester { AvailableBytesForTests = () => Interlocked.Read(ref available), TotalBytesForTests = () => 8 * gb };
+        s.Start(cpu: false, ram: true, ramFraction: 0.5);
+        try
+        {
+            Assert.True(SpinWait.SpinUntil(() => s.MemoryPasses > 0, 30000), "o teste de RAM não completou uma passada");
+            Assert.Equal(gb, s.MemoryAllocatedBytes);
+            Assert.Null(s.MemoryNotice);
+
+            // outro programa consumiu a memória: abaixo da reserva, o teste devolve em vez de esperar o OOM killer
+            Interlocked.Exchange(ref available, StressTester.ReserveBytes(8 * gb) - 1);
+            Assert.True(SpinWait.SpinUntil(() => !s.MemoryWorkerRunning, 30000), "o teste de RAM não devolveu a memória");
+            Assert.Equal(0, s.MemoryAllocatedBytes);
+            Assert.Contains("memória", s.MemoryNotice);
+            Assert.Equal(0, s.MemoryErrors);
+        }
+        finally { s.Stop(); }
+
+        // reduz só o necessário quando ainda dá para continuar
+        long left = 4 * gb;
+        var partial = new StressTester { AvailableBytesForTests = () => Interlocked.Read(ref left), TotalBytesForTests = () => 8 * gb };
+        partial.Start(cpu: false, ram: true, ramFraction: 0.25);
+        try
+        {
+            Assert.True(SpinWait.SpinUntil(() => partial.MemoryPasses > 0, 30000));
+            long before = partial.MemoryAllocatedBytes;
+            long reserve = StressTester.ReserveBytes(8 * gb);
+            // cada bloco devolvido "volta" à memória disponível, como no sistema real
+            partial.OnChunkReleasedForTests = () => Interlocked.Add(ref left, chunk);
+            Interlocked.Exchange(ref left, reserve - 2 * chunk);
+            long passes = partial.MemoryPasses;
+            Assert.True(SpinWait.SpinUntil(() => partial.MemoryPasses > passes + 1, 30000));
+            Assert.Equal(before - 2 * chunk, partial.MemoryAllocatedBytes);
+            Assert.True(partial.MemoryWorkerRunning);
+            Assert.Contains("memória", partial.MemoryNotice);
+        }
+        finally { partial.Stop(); }
+    }
+
+    [Fact]
+    public void Stress_threads_yield_to_the_desktop_on_linux()
+    {
+        if (!OperatingSystem.IsLinux()) return; // Thread.Priority não vale no Linux; a prioridade real é o nice, conferido no CI
+        static int Nice() => int.Parse(File.ReadAllText("/proc/thread-self/stat").Split(')')[^1].Split(' ', StringSplitOptions.RemoveEmptyEntries)[16]);
+        int caller = Nice(), inside = caller;
+        var t = new Thread(() => { StressTester.LowerCurrentThread(); inside = Nice(); });
+        t.Start(); t.Join();
+        Assert.True(inside > caller, $"nice {inside}, chamador {caller}");
+        Assert.Equal(caller, Nice()); // só a thread do teste, não o processo (a janela continua com prioridade normal)
+    }
+
+    [Fact]
     public void Ram_bench_shared_with_windows_runs()
     {
         var lat = MemoryBench.MeasureLatencyNs(new CancellationTokenSource(1500).Token);

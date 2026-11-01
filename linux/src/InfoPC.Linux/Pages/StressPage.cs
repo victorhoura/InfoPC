@@ -31,6 +31,7 @@ public sealed class StressPage : PageBase
     private float _maxCpu, _maxGpu;
     private float _cpuLimit, _gpuLimit;
     private string? _failure;
+    private string? _memNotice;
     private readonly List<float?> _cpuSeries = new(), _gpuSeries = new(), _loadSeries = new();
 
     public StressPage()
@@ -122,6 +123,7 @@ public sealed class StressPage : PageBase
         _load.Text = Ui.Num0(S.Hub.CpuLoad, " %"); _power.Text = Ui.Num0(S.Hub.CpuPower, " W");
         _gpuNow.Text = Ui.Num0(gpuT, " °C"); _gpuMax.Text = Ui.Num0(_maxGpu > 0 ? _maxGpu : null, " °C");
         _mem.Text = $"{_stress.MemoryPasses} / {_stress.MemoryErrors}";
+        if (_stress.MemoryNotice is { } notice && notice != _memNotice) { _memNotice = notice; Log(notice); }
         _time.Text = _duration > TimeSpan.Zero ? $"{elapsed:mm\\:ss} / {_duration:mm\\:ss}" : $"{elapsed:mm\\:ss}";
 
         int span = Math.Min(300, _cpuSeries.Count);
@@ -135,6 +137,8 @@ public sealed class StressPage : PageBase
         if (_stress.MemoryErrors > 0) { _failure = $"{_stress.MemoryErrors:N0} erros de memória (RAM/EXPO instável)"; Finish(_failure); return; }
         // a carga de GPU morreu (sem display, sem driver 3D ou o driver caiu): o teste não segue como se a GPU estivesse sob carga
         if (_gpuStress.Failed) { _failure = $"a carga de GPU parou ({_gpuStress.Error})"; Finish(_failure); return; }
+        // só a RAM estava sob teste e ela devolveu toda a memória ao sistema: não há o que seguir medindo
+        if (_ram.IsChecked == true && _cpu.IsChecked != true && !_gpuStress.Running && _stress.MemoryNotice != null && !_stress.MemoryWorkerRunning) { _failure = "o sistema ficou sem memória livre para o teste de RAM"; Finish(_failure); return; }
         if (_duration > TimeSpan.Zero && elapsed >= _duration) Finish("tempo concluído");
     }
 

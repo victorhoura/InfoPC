@@ -83,6 +83,37 @@ public class UiTests
     private static string? ShotsDir => Environment.GetEnvironmentVariable("INFOPC_SHOTS") is { Length: > 0 } d ? d : null;
 
     [AvaloniaFact]
+    public async Task An_error_in_a_page_action_does_not_close_the_program()
+    {
+        // Os botões das páginas são async void: uma exceção volta ao dispatcher e, sem tratamento, encerra o processo.
+        using var fx = Fx.Use("intel-desktop");
+        string old = AppSettings.Folder;
+        string dir = Directory.CreateTempSubdirectory("infopc-acao-").FullName;
+        AppSettings.Folder = dir;
+        CrashLog.ResetForTests();
+        var w = await OpenAsync();
+        try
+        {
+            async void Action() { await Task.Yield(); throw new IOException("ação indisponível"); }
+            Action();
+            await Settle(); // sem tratamento, a exceção sairia daqui, como sai do laço principal do programa
+            Assert.Contains("ação indisponível", File.ReadAllText(Path.Combine(dir, "erros.log")));
+            Assert.True(w.IsVisible);
+            Assert.Contains("erros.log", w.ErrorNotice);
+            w.Navigate("sensors");
+            Assert.Equal("", w.ErrorNotice); // o aviso não persegue o usuário em outra página
+        }
+        finally
+        {
+            w.Close();
+            Services.Current.ResetForTests();
+            CrashLog.ResetForTests();
+            AppSettings.Folder = old;
+            Directory.Delete(dir, true);
+        }
+    }
+
+    [AvaloniaFact]
     public async Task A_failing_page_does_not_skip_the_other_sensor_subscribers()
     {
         using var fx = Fx.Use("intel-desktop");

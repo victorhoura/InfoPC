@@ -148,6 +148,7 @@ public sealed class BenchPage : PageBase
         _timer.Start();
 
         double? mt = null, st = null;
+        string? failed = null;
         try
         {
             if (doMt)
@@ -164,6 +165,7 @@ public sealed class BenchPage : PageBase
             }
         }
         catch (OperationCanceledException) { }
+        catch (Exception ex) { failed = ex.Message; CrashLog.Write("Benchmark de CPU", ex); }
 
         _timer.Stop();
         bool cancelled = ct.IsCancellationRequested;
@@ -172,6 +174,7 @@ public sealed class BenchPage : PageBase
         _cpuBtn.Content = "INICIAR"; _cpuBtn.Classes.Remove("outline"); _cpuBtn.Classes.Add("primary");
         Busy.End("benchmark de CPU");
         _buckets.InvalidateVisual();
+        if (failed != null) { _cpuStatus.Text = "O teste falhou: " + failed; return; }
         if (cancelled) { _cpuStatus.Text = "Cancelado"; return; }
         _cpuStatus.Text = $"Concluído em {DateTime.Now - _runStart:m\\:ss}";
         if (mt is double m && st is double s) _cpuRatio.Text = $"Multi ÷ single: {m / s:0.0}x com {threads} threads (núcleos com SMT costumam render 8–12x).";
@@ -233,13 +236,16 @@ public sealed class BenchPage : PageBase
         });
         tm.Start();
         GameSimResult? res = null;
+        string? failed = null;
         try { res = await Task.Run(() => sim.Run(TimeSpan.FromSeconds(_simDur == 0 ? 30 : 60), ct), ct); }
         catch (OperationCanceledException) { }
+        catch (Exception ex) { failed = ex.Message; CrashLog.Write("Simulação de jogo", ex); }
         tm.Stop();
         _simCts = null;
         _simProgress.Value = 0;
         _simBtn.Content = "INICIAR"; _simBtn.Classes.Remove("outline"); _simBtn.Classes.Add("primary");
         Busy.End("simulação de jogo");
+        if (failed != null) { _simStatus.Text = "O teste falhou: " + failed; return; }
         if (res == null || ct.IsCancellationRequested) { _simStatus.Text = "Cancelado"; return; }
         _simScore.Text = $"{res.Score:N0}";
         _simDetail.Text = $"1% low {res.Low1Fps:0} FPS · thread principal {res.MainThreadMs:0.00} ms · trabalho paralelo {res.ParallelMs:0.00} ms · {res.Frames:N0} quadros em {res.Seconds:0} s";
@@ -400,6 +406,7 @@ public sealed class BenchPage : PageBase
             }
             else _gpuStatus.Text = r.Error == "cancelado" ? "Cancelado" : "O teste falhou: " + r.Error;
         }
+        catch (Exception ex) { _gpuStatus.Text = "O teste falhou: " + ex.Message; CrashLog.Write("Benchmark de GPU", ex); }
         finally
         {
             S.Paused = false;

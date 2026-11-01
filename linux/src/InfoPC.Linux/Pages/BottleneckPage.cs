@@ -100,7 +100,7 @@ public sealed class BottleneckPage : PageBase
         var s = LinuxBottleneck.Sample(S.Hub, S.MainGpu);
         var lim = s.Classify();
 
-        if (DateTime.Now - _libAt > TimeSpan.FromSeconds(3)) { _libAt = DateTime.Now; _running = _library.Count > 0 ? GameDetector.Any(_library) : null; }
+        if (DateTime.Now - _libAt > TimeSpan.FromSeconds(3)) { _libAt = DateTime.Now; RefreshRunningGame(); }
         _liveTitle.Text = LinuxBottleneck.Title(lim);
         _liveAdvice.Text = LinuxBottleneck.Advice(lim);
         _liveGame.Text = _running != null ? $"Jogo detectado: {_running.Name} ({_running.Store})" : "Nenhum jogo da biblioteca em execução. Abra o jogo para a leitura fazer sentido.";
@@ -129,6 +129,19 @@ public sealed class BottleneckPage : PageBase
     }
 
     private GameDetector.Running? _running;
+    private bool _runningBusy;
+
+    /// <summary>Ler /proc/*/cmdline espera o processo lido, e um processo em swap demora: nunca na thread da janela.</summary>
+    private async void RefreshRunningGame()
+    {
+        if (_runningBusy) return;
+        var library = _library;
+        if (library.Count == 0) { _running = null; return; }
+        _runningBusy = true;
+        try { _running = await Task.Run(() => GameDetector.Any(library)); }
+        catch (Exception ex) { CrashLog.Write("Gargalo", ex); }
+        finally { _runningBusy = false; }
+    }
 
     private void Toggle()
     {

@@ -1,3 +1,11 @@
+## Novidades da v1.1.9
+
+**Linux — estabilidade**
+- Uma ação de página que falha deixa de fechar o programa: o erro vai para `erros.log` e aparece um aviso na página. Falta de memória ou erro que se repete sem parar ainda encerram, com o registro gravado.
+- O teste de RAM acompanha a memória livre durante a execução e devolve memória ao sistema antes que ela acabe, em vez de só medir no início. Isso evita congelar o PC e o programa ser encerrado pelo Linux.
+- As cargas do stress test têm prioridade menor que a área de trabalho, sem deixar de usar os núcleos a 100%.
+- As leituras de unidades em Discos e de jogos em execução no Overlay e no Gargalo saíram da thread da janela. Uma unidade de rede caída não congela mais a janela.
+
 ## Novidades da v1.1.8
 
 **Linux — estabilidade**
