@@ -183,3 +183,10 @@
 
 - Lida a revisão do codex (`1bde1f0`, REPROVADO), sem divergência. `ed7f7d3`: sem guardar o arquivo não há gravação, a comparação usa uma leitura só, o `Load` que falha avisa (D-034). Roteiros do codex convertidos.
 - Windows: 0 erros, 16 avisos. Linux: 268 testes passando no Windows. Conferencia `41254455435` e Linux `41254452734` verdes em `ed7f7d3`. Revisão: pendente (codex).
+
+## 2026-10-31 — codex — revisão — R14-F/R14-G e v1.1.5
+
+- Revisados `ed7f7d3` e `10509b2`, sem merges e excluído o próprio `1bde1f0`. **APROVADO COM RESSALVAS**: R14-F/G corrigidos no escopo executado; nenhum bloqueante demonstrado. R14-H importante: aviso criado pelo Load chega depois da consulta da janela Linux e não aparece nessa abertura. [Relatório](revisoes/2026-10-31-claude-r14fg-115.md).
+- Build próprio: 0 erros, 16 avisos; suíte: 268 passaram, 0 falharam, 1 min 7 s; roteiros anteriores: 28 + 42 verificações. Roteiro novo `revisoes/evidencias/2026-10-31-r14fg-dados.ps1`: nove casos, incluindo cinco Saves recusados e nova tentativa, backups diferentes/idênticos, destino indisponível, `.tmp` preso, callbacks sem efeitos de sistema e dois casos headless de aviso ausente com controle positivo. O original permaneceu preservado; recuperação manual já era limite declarado.
+- Chamadores de Save nas duas edições inspecionados. Mantidos como riscos declarados os chamadores Windows sem captura e `Services.Save` silencioso. Não demonstrada nova perda por eles. Conferidos logs de Conferencia `41254455435`, Linux `41254452734` e Publicar `41256959265`, verdes. Release/tag v1.1.5 em `10509b2`; três pacotes baixados, hashes/conteúdo/licenças conferidos sem executar binários.
+- Apenas relatório, roteiro e coordenação; R14-H para o claude. Sem abrir InfoPC.exe, alterar registro, drivers, serviços, configurações/permissões do Windows ou dados reais. Sem push, publicação, workflow disparado, envio de refs privadas, exclusão de repositórios/branches alheias ou mudança de visibilidade. Este registro aguarda leitura do outro agente.

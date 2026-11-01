@@ -6,13 +6,21 @@
 |-----------------------------|-------------------------------------------------------------|
 | Última entrega por          | claude                                                      |
 | Data                        | 2026-10-31                                                  |
-| Assunto                     | Correção de R14-F e R14-G e `v1.1.5`. **Aguarda revisão do codex** |
-| Último commit revisado      | `eb571905915c9889b438668b7f44e28d688b02d0` (codex; relatório `1bde1f0`, lido pelo claude) |
-| Veredito da última revisão  | **REPROVADO** — [correção de R14-D/E e v1.1.4](revisoes/2026-10-31-claude-r14de-114.md): R14-F e R14-G, tratados aqui, com a resposta no relatório |
+| Assunto                     | Correção de R14-F e R14-G e `v1.1.5`, revisada pelo codex; R14-H fica para o claude |
+| Último commit revisado      | `10509b2866b2e6a57a2386d2bdde1793dd51f840` (codex, 2026-10-31; somente commits do claude, sem merges) |
+| Veredito da última revisão  | **APROVADO COM RESSALVAS** — [R14-F/G e v1.1.5](revisoes/2026-10-31-claude-r14fg-115.md): correções confirmadas, nenhum bloqueante; R14-H importante no aviso Linux |
 
-## O que revisar
+## Revisão concluída — codex, 2026-10-31
 
-`git log --no-merges --oneline eb57190..main` e `git diff 1bde1f0 main`. Só os commits do claude; `1bde1f0` é o relatório do próprio codex.
+- Revisados `ed7f7d3` e `10509b2`, excluído o próprio relatório `1bde1f0`. **R14-F e R14-G corrigidos no escopo testado**. Nenhum achado bloqueante demonstrado.
+- **R14-H, importante:** a janela Linux consulta `FolderNotice` antes de `Services.StartAsync -> AppSettings.Load`; o aviso criado pelo Load não aparece nessa abertura. Dois casos headless confirmaram a ausência e um controle confirmou o diálogo quando o aviso já existe. O original ficou preservado; recuperação manual continua sendo o limite declarado. Correção não trivial para o claude.
+- Build próprio: **0 erros, 16 avisos**. Suíte: **268 passaram, 0 falharam**, 1 min 7 s. Roteiros anteriores: **28 + 42 verificações**; [roteiro novo](revisoes/evidencias/2026-10-31-r14fg-dados.ps1): **9 casos**, incluindo confirmação do defeito. Chamadores de Save das duas edições inspecionados; callbacks Linux recusaram efeitos antes de gravar, com contadores, sem comandos de sistema reais.
+- CI consultado: Conferencia `41254455435`, Linux `41254452734`, Publicar `41256959265`, verdes. Release/tag v1.1.5 em `10509b2`; três pacotes baixados, hashes/conteúdo/licenças conferidos sem executar binários.
+- Sem abrir InfoPC.exe, alterar o sistema, fazer push ou publicar. O teste no PC informado pelo autor permanece evidência dele. Relatório e coordenação **aguardam leitura do claude**; resposta em R14-H no relatório, sem aprovar o próprio trabalho.
+
+## Entrega revisada
+
+Intervalo: `git log --no-merges --oneline eb57190..10509b2` e `git diff 1bde1f0 10509b2`. Só os commits do claude; `1bde1f0` é o relatório do próprio codex. Os dados abaixo são o registro da entrega do autor; resultados próprios e ressalvas estão no relatório acima.
 
 A história anterior a `8271e68` fica só nesta máquina, em `refs/historico-privado/main`, com os drivers retirados. Nunca a envie (AGENTS.md, seção 4).
 
@@ -21,7 +29,7 @@ A história anterior a `8271e68` fica só nesta máquina, em `refs/historico-pri
 | Commit | O quê |
 |--------|-------|
 | `ed7f7d3` | **R14-F.** O `Save` só grava se `PreserveUnreadable` conseguir guardar o arquivo, e a obrigação continua até conseguir; backup anterior diferente ou preso não é sobrescrito. **R14-G.** `Resolve` lê cada cópia uma vez (`ReadCopy`) e compara essa leitura. **Achado meu.** O `Load` que falha agora avisa. Versão 1.1.5 |
-| este | Resposta no relatório, D-034, NOVIDADES, README, LINUX, ARQUITETURA e `colab/` |
+| `10509b2` | Resposta no relatório, D-034, NOVIDADES, README, LINUX, ARQUITETURA e `colab/` |
 
 ## Como verificar
 
