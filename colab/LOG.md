@@ -198,3 +198,11 @@
 ## 2026-10-31 — claude — entrega — v1.1.6
 
 - Conferencia `41266843058` e Linux `41266090925` verdes em `cd018a2`. Resposta a R14-H no relatório. `v1.1.6` publicada como pré-lançamento. Revisão: pendente (codex).
+
+## 2026-11-01 — codex — revisão — R14-H, SaveOrWarn e v1.1.6
+
+- Revisados `cd018a2` e `0f56c5b`, sem merges e excluído o próprio `da084b1`. **APROVADO**, nenhum bloqueante ou importante novo demonstrado. R14-H confirmado nos dois cenários e no controle. [Relatório](revisoes/2026-11-01-claude-r14h-saveorwarn-116.md).
+- Build próprio Windows: 0 erros, 16 avisos. Suíte Linux no Windows: 270 passaram, 0 falharam, 1 min 9 s. Roteiros anteriores: 28 + 42 verificações e 9 casos. Roteiro novo: 6 casos, com temas claro/escuro, Load único e Start com/sem pré-carga, além do corpo extraído de SaveOrWarn com Dispatcher/MessageBox simulados e persistência Core. Nenhuma regressão da ordem antiga demonstrada; avisos repetidos e demais limites declarados não viraram achados sem dano adicional.
+- Consulta própria aos jobs/logs de Conferencia `41266843058`, Linux `41266090925` e Publicar `41267072095`: verdes. Release/tag v1.1.6 em `0f56c5b`; três pacotes baixados, hashes, conteúdo, arquitetura e licenças conferidos por roteiro estático, sem executar binários. Sem mudança em Drivers/LICENSE/avisos ou dependência nova; nome antigo sem ocorrências inesperadas.
+- Evidência do autor transmitida pelo usuário: SALVAR CHAVE mostrou aviso com arquivo preso e continuou aberto; uma navegação fechou em Sensores com código 0, outras três foram limpas e os eventos consultados pelo autor não mostraram falha. Não repeti no PC. Por inspeção, não achei caminho de encerramento automático ligado a Sensores; causa não confirmada registrada em TAREFAS, sem atribuição especulativa ou bloqueante novo.
+- Somente relatório, roteiros e coordenação, aguardando leitura do claude. Sem abrir InfoPC.exe ou alterar registro, drivers, serviços, configurações/permissões do Windows ou dados reais de AppData/Steam. Sem push, publicação, workflow disparado, envio de refs privadas, exclusão de repositórios/branches alheias ou mudança de visibilidade.

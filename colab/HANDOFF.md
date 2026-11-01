@@ -6,13 +6,22 @@
 |-----------------------------|-------------------------------------------------------------|
 | Última entrega por          | claude                                                      |
 | Data                        | 2026-10-31                                                  |
-| Assunto                     | Correção de R14-H, `SaveOrWarn` e `v1.1.6`. **Aguarda revisão do codex** |
-| Último commit revisado      | `10509b2866b2e6a57a2386d2bdde1793dd51f840` (codex; relatório `da084b1`, lido pelo claude) |
-| Veredito da última revisão  | **APROVADO COM RESSALVAS** — [correção de R14-F/G e v1.1.5](revisoes/2026-10-31-claude-r14fg-115.md): R14-H, tratado aqui, com a resposta no relatório |
+| Assunto                     | Correção de R14-H, `SaveOrWarn` e `v1.1.6`, revisada pelo codex |
+| Último commit revisado      | `0f56c5bbb25d46117042a3c401f0217c666d0b91` (codex, 2026-11-01; somente commits do claude, sem merges) |
+| Veredito da última revisão  | **APROVADO** — [R14-H, SaveOrWarn e v1.1.6](revisoes/2026-11-01-claude-r14h-saveorwarn-116.md); nenhum bloqueante ou importante novo demonstrado |
 
-## O que revisar
+## Revisão concluída — codex, 2026-11-01
 
-`git log --no-merges --oneline 10509b2..main` e `git diff da084b1 main`. Só os commits do claude; `da084b1` é o relatório do próprio codex.
+- Revisados `cd018a2` e `0f56c5b`; excluído o próprio `da084b1`. **R14-H confirmado como corrigido**: um diálogo na primeira abertura tanto com arquivo danificado quanto com bloqueio após Resolve, além do controle positivo.
+- Build próprio: **0 erros, 16 avisos**. Suíte: **270 passaram, 0 falharam**, 1 min 9 s. Roteiros anteriores: **28 + 42 verificações e 9 casos**. [Roteiro novo](revisoes/evidencias/2026-11-01-r14h-saveorwarn.ps1): **6 casos**, verificando temas claro/escuro, Load único, Start com/sem pré-carga e SaveOrWarn com arquivo preso e nova tentativa.
+- Nenhuma dependência quebrada da ordem antiga demonstrada. `SaveOrWarn` foi extraído sem alteração do corpo, com Dispatcher/MessageBox simulados e persistência Core; não é teste de clique WPF. As sete chamadas e os callbacks de persistência obrigatória foram inspecionados. Limites D-032 a D-034 e avisos repetidos continuam declarados, sem novo dano demonstrado.
+- Logs dos CIs Conferencia `41266843058`, Linux `41266090925` e Publicar `41267072095` consultados: verdes. Tag/Release v1.1.6 em `0f56c5b`; três pacotes baixados, hashes, conteúdo, arquiteturas e licenças conferidos sem executar binários.
+- Relato do autor transmitido pelo usuário: SALVAR CHAVE avisou com arquivo preso e continuou aberto. Uma navegação fechou em Sensores com código 0, outras três foram limpas, sem falha nos eventos que o autor consultou. **Não encontrei caminho de encerramento automático ligado à página; causa continua não confirmada**, registrada em TAREFAS. Não repeti esses testes no PC.
+- Sem abrir InfoPC.exe ou alterar o sistema; sem push/publicação. Relatório e coordenação **aguardam leitura do claude**. Nenhuma correção de produto.
+
+## Entrega revisada
+
+Intervalo: `git log --no-merges --oneline 10509b2..0f56c5b` e `git diff da084b1 0f56c5b`. Só os commits do claude. Os itens abaixo preservam o registro do autor; resultados próprios e limites estão no relatório acima.
 
 A história anterior a `8271e68` fica só nesta máquina, em `refs/historico-privado/main`, com os drivers retirados. Nunca a envie (AGENTS.md, seção 4).
 
@@ -21,7 +30,7 @@ A história anterior a `8271e68` fica só nesta máquina, em `refs/historico-pri
 | Commit | O quê |
 |--------|-------|
 | `cd018a2` | **R14-H.** `Services.LoadSettings` antes de olhar `FolderNotice`, na janela Linux. **`SaveOrWarn`** nas sete chamadas sem proteção do Windows: avisa em vez de deixar a exceção fechar o programa. Versão 1.1.6 |
-| este | Resposta no relatório, NOVIDADES, README, LINUX, ARQUITETURA e `colab/` |
+| `0f56c5b` | Resposta no relatório, NOVIDADES, README, LINUX, ARQUITETURA e `colab/` |
 
 ## Como verificar
 
@@ -30,7 +39,7 @@ A história anterior a `8271e68` fica só nesta máquina, em `refs/historico-pri
 - **Roteiros do codex:** `r14-dados` → 28 verificações; `r14de-dados` → 42; `r14fg-dados` → diálogo presente nos dois casos.
 - **[Conferencia 41266843058](https://github.com/victorhoura/InfoPC/actions/runs/41266843058)** e **[Linux 41266090925](https://github.com/victorhoura/InfoPC/actions/runs/41266090925)**, em `cd018a2`, verdes.
 - **Não verificado (honestidade):**
-  - **`SaveOrWarn` clicado no PC real:** ver o resultado no fim do LOG, se já houver; a lógica é um `try` em volta do `Save`.
+  - **`SaveOrWarn` clicado no PC real:** resultado positivo informado pelo autor via usuário, registrado acima; não repetido pelo revisor.
   - **Linux em PC físico:** sensores, S.M.A.R.T. e GPU de verdade. Janela de senha do polkit fechada pelo usuário (126) só está simulada.
   - **FPS com chave:** não há chave da HowManyFPS. **Sem hardware aqui:** Integração RGB e placas Arduino conectadas.
   - **Não clicado de propósito no PC real:** instalar driver NVIDIA, Windows Update, OTIMIZAR, APLICAR do Overclock, Instalar apps, remover dispositivos e liberar números COM, stress longo. A CPU chega a 100 °C aqui.
