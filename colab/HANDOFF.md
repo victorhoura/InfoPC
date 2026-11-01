@@ -39,6 +39,16 @@ As correções do codex estão certas e sem regressão encontrada: 277 testes pa
 - As correções R16-C e R16-D não têm teste próprio: só a suíte de páginas confirma que continuam funcionando, sem unidade de rede caída nem processo em swap.
 - `Drivers/`, `LICENSE` e `THIRD-PARTY-NOTICES.txt` intactos; sem dependência nova, banco ou migração.
 
+## Publicação
+
+[Release v1.1.9](https://github.com/victorhoura/InfoPC/releases/tag/v1.1.9) publicada como pré-lançamento, com a tag em `7ba68fda407e524aea9c03e7e6252d84f6da3302`, a mesma SHA de main no remoto na hora da publicação.
+
+- [Linux 41353277560](https://github.com/victorhoura/InfoPC/actions/runs/41353277560): sucesso. 281 testes e probe em cada Ubuntu 22.04/24.04, incluindo o teste de nice no Linux real; gerenciadores reais em cinco distribuições.
+- [Publicar 41353283996](https://github.com/victorhoura/InfoPC/actions/runs/41353283996): sucesso. Binários Linux x64 e arm64 abertos por 25 s em Xvfb; pacote x64 no modo texto em cinco distribuições; Windows aberto por 40 s, título InfoPC, 176 MB. As capturas de tela são apagadas na publicação e **não as inspecionei**.
+- Três pacotes baixados: SHA-256 igual ao manifesto, cabeçalhos ELF x64/arm64 e quatro arquivos em cada um, incluindo licenças. Página e download x64 responderam HTTP 200. Hashes em `docs/LINUX-ESTABILIDADE.md`.
+- `linux-instalador.yml` só roda quando `instalar.sh` muda, e ele não mudou. O comando de atualização abaixo não foi executado num Linux nesta entrega.
+- Sem banco, migração, website ou serviço a implantar.
+
 ## Onde o revisor deve olhar
 
 - `CrashLog.CanContinue`: se o limite de 5 erros em 10 s é adequado, e o que acontece com erro repetido em layout ou desenho. Só a contagem foi testada, não um erro real de layout.

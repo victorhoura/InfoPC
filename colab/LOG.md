@@ -251,3 +251,10 @@
 - Verificação: 281 testes, 0 falhas, 1 min 54 s (`dotnet test linux/tests/InfoPC.Tests/InfoPC.Tests.csproj -c Release --nologo --blame-hang-timeout 120s`); StartupProbe passou; Windows 0 erros, 16 avisos conhecidos. Sem Linux físico nem NVIDIA. Sem scan do HawkScan: programa de desktop, sem serviço web, e `HAWK_API_KEY` ausente.
 - Intercorrência: a primeira tentativa de rodar os testes foi recusada pela proteção do worktree, por usar comando composto; rodou como comando simples.
 - **Aguarda revisão cruzada do codex e repetição no Linux físico.** Publicação registrada em entrada posterior.
+
+## 2026-11-01 — claude — publicação e conferência da v1.1.9
+
+- Push de `7ba68fd` em main, SHA remoto conferido. Linux `41353277560` e Publicar `41353283996` com sucesso; tag `v1.1.9` em `7ba68fd`, pré-lançamento.
+- 281 testes em cada Ubuntu 22.04/24.04, incluindo o teste de nice que só exerce algo no Linux. Binários Linux abertos por 25 s em Xvfb, Windows por 40 s. Capturas de tela não inspecionadas: a publicação as apaga. O meu primeiro comando de espera falhou por parâmetro inválido do `gh`, sem efeito nos workflows; conferi o resultado por `gh run view`.
+- Três pacotes baixados: SHA-256 igual ao manifesto, arquitetura e licenças conferidas; hashes em `docs/LINUX-ESTABILIDADE.md`. Página e download x64 com HTTP 200.
+- Comando de atualização lido em `instalar.sh`, não executado num Linux nesta entrega. **Revisão do codex e repetição no Linux físico pendentes.** Obsidian atualizado por último.

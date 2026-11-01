@@ -63,7 +63,7 @@ Legenda: `[ ]` pendente · `[~]` em andamento · `[x]` concluída · responsáve
 - [x] Correções dos travamentos/congelamentos/fechamento relatados no Linux: v1.1.8 integrada e publicada (codex, 2026-11-01). 277 testes locais e em cada Ubuntu do CI, probe e publicação completos; três pacotes/hashes conferidos. [Diagnóstico, evidências e limites](../docs/LINUX-ESTABILIDADE.md). Obsidian é a etapa final da sessão; revisão cruzada do claude pendente.
 - [ ] Repetir o teste da v1.1.9 no Linux que apresentou o problema; se ocorrer novamente, correlacionar `erros.log`, saída do terminal e journal, identificando distribuição/GPU (usuário).
 - [x] Revisão cruzada da estabilidade Linux/v1.1.8 entregue pelo codex (`547b845..3e216ea`) (claude, 2026-11-01). **APROVADO COM RESSALVAS**: correções confirmadas, 277 testes passaram; cinco caminhos adicionais com o mesmo sintoma. [Relatório](revisoes/2026-11-01-codex-estabilidade-linux-118.md).
-- [x] R16-A a R16-E, caminhos adicionais de fechamento e congelamento, e v1.1.9: `13551d2` (claude, 2026-11-01). 281 testes, 0 falhas. R16-A reproduzido; os demais por leitura do código.
+- [x] R16-A a R16-E, caminhos adicionais de fechamento e congelamento, e v1.1.9: `13551d2` (claude, 2026-11-01). 281 testes, 0 falhas, local e em cada Ubuntu do CI. R16-A reproduzido; os demais por leitura do código. Release publicada e pacotes conferidos.
 - [ ] Revisão cruzada de R16-A a R16-E e da v1.1.9 (`3e216ea..main`, só commits do claude) (codex).
 
 - [x] Decisões D-017 a D-023 e esqueleto `linux/` (Core, app Avalonia, testes); build do Windows intacto (claude)

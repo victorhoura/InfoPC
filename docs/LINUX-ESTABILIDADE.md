@@ -18,7 +18,15 @@ Encerrar por exceção é pior do que parece: `vkmark` e `glmark2` são processo
 
 Limites que continuam: unidade de rede caída ainda pode prender a detecção inicial em worker (a janela responde, mas os sensores não começam); `OverlayWindow.Lines` e `OcPage.BuildGpuBox` consultam a NVML na thread da janela; falha nativa do driver gráfico não passa pelo `erros.log`.
 
-Resultados da publicação ficam em `colab/HANDOFF.md`.
+### Publicação da 1.1.9
+
+Tag em `7ba68fda407e524aea9c03e7e6252d84f6da3302`. [Linux 41353277560](https://github.com/victorhoura/InfoPC/actions/runs/41353277560) e [Publicar 41353283996](https://github.com/victorhoura/InfoPC/actions/runs/41353283996) com sucesso; 281 testes em cada Ubuntu 22.04/24.04. Pacotes baixados e conferidos contra o [manifesto da Release](https://github.com/victorhoura/InfoPC/releases/download/v1.1.9/SHA256SUMS.txt):
+
+| Pacote | Bytes | SHA-256 |
+|---|---:|---|
+| Linux x64 | 38.510.533 | `b9fc48e2c3b7c22f433f887919ecc4e7382e1e86d87ca32e425c946ed6a19586` |
+| Linux arm64 | 36.749.593 | `15229a984694b3feb8a3e2298caa030c7ab73baa5b5c8b89d1a29b5c503852ce` |
+| Windows x64 | 81.042.266 | `b8d9a4e1161ff38f2c0d3fcfe6a6cf89cca4fabd5c813a736cb9362ac369f859` |
 
 # 1.1.8
 
