@@ -30,11 +30,11 @@ public static class BottleneckAnalyzer
         }
 
         var cores = rows.Where(r => r.HardwareType == HardwareType.Cpu && r.Type == SensorType.Load &&
-                                    r.Name.StartsWith("CPU Core #") && !r.Name.Contains("Thread") && r.RawValue != null).ToList();
+                                    r.Name.StartsWith("CPU Core #") && r.RawValue != null).ToList(); // com SMT, são "CPU Core #1 Thread #1"
         var busiest = cores.OrderByDescending(r => r.RawValue).FirstOrDefault();
         float? ram = rows.FirstOrDefault(r => r.HardwareType == HardwareType.Memory && r.Type == SensorType.Load && r.Name == "Memory")?.RawValue;
 
-        return new LoadSample(gpuLoad, m.CpuLoad, busiest?.RawValue, busiest?.Name.Replace("CPU Core #", "núcleo "),
+        return new LoadSample(gpuLoad, m.CpuLoad, busiest?.RawValue, busiest?.Name.Replace("CPU Core #", "núcleo ").Split(" Thread")[0],
                               vramPct, ram, gpuTemp, m.CpuTemperature, thermal, frames?.Fps);
     }
 

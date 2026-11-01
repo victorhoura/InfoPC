@@ -7,6 +7,9 @@ namespace InfoPC;
 public sealed class SensorMonitor : IDisposable
 {
     private readonly Computer _computer;
+    /// <summary>Memória e discos: num PC com RAID, a detecção de discos passa de um minuto. Abrem depois, para a CPU e a GPU não esperarem por eles.</summary>
+    private readonly Computer[] _later;
+    private volatile Computer[] _laterOpen = Array.Empty<Computer>();
     private readonly Dictionary<string, SensorRow> _index = new();
     private volatile bool _open;
 
@@ -19,23 +22,47 @@ public sealed class SensorMonitor : IDisposable
         {
             IsCpuEnabled = true,
             IsGpuEnabled = true,
-            IsMemoryEnabled = true,
             IsMotherboardEnabled = true,
-            IsStorageEnabled = true,
             IsNetworkEnabled = true,
             IsControllerEnabled = true
         };
+        _later = new[] { new Computer { IsMemoryEnabled = true }, new Computer { IsStorageEnabled = true } };
     }
 
-    /// <summary>Detecta o hardware (leva de 0,5 a alguns segundos) fora da thread da janela. Até terminar, Refresh não faz nada.</summary>
-    public Task OpenAsync() => Task.Run(() => { _computer.Open(); _open = true; });
+    /// <summary>Detecta CPU e GPU fora da thread da janela (menos de um segundo). Até terminar, Refresh não faz nada. Memória e discos continuam em segundo plano e entram no Refresh quando ficam prontos.</summary>
+    public Task OpenAsync() => Task.Run(() =>
+    {
+        _computer.Open();
+        _open = true;
+        _ = Task.Run(OpenLater);
+    });
+
+    private void OpenLater()
+    {
+        foreach (var c in _later)
+        {
+            // sem memória ou discos, o resto continua funcionando, como sempre foi com sensor que falta
+            try { c.Open(); }
+            catch { continue; }
+            _laterOpen = _laterOpen.Append(c).ToArray();
+        }
+    }
 
     public void Refresh()
     {
         if (!_open) return;
         foreach (var hw in _computer.Hardware)
             Walk(hw);
+        foreach (var c in _laterOpen)
+            foreach (var hw in c.Hardware)
+                Walk(hw);
     }
+
+    /// <summary>Clock de cada núcleo da CPU. A biblioteca chama de "CPU Core #1" na Intel e pode chamar de "Core #1" em outras; "Bus Speed" e "Effective" não contam.</summary>
+    public List<float> CpuCoreClocks() =>
+        Rows.Where(r => r.HardwareType == HardwareType.Cpu && r.Type == SensorType.Clock &&
+                        (r.Name.StartsWith("CPU Core #") || r.Name.StartsWith("Core #")) && !r.Name.Contains("Effective") && r.RawValue > 0)
+            .Select(r => r.RawValue!.Value).ToList();
 
     private void Walk(IHardware hw)
     {
@@ -133,5 +160,7 @@ public sealed class SensorMonitor : IDisposable
     public void Dispose()
     {
         if (_open) _computer.Close();
+        foreach (var c in _laterOpen)
+            try { c.Close(); } catch { } // ao fechar o programa; quem ainda está abrindo morre com o processo
     }
 }

@@ -35,8 +35,7 @@ public partial class MainWindow
 
     private float? CpuClockAvg()
     {
-        var c = _monitor.Rows.Where(r => r.HardwareType == HardwareType.Cpu && r.Type == SensorType.Clock &&
-                                         r.Name.StartsWith("Core #") && r.RawValue > 0).Select(r => r.RawValue!.Value).ToList();
+        var c = _monitor.CpuCoreClocks();
         return c.Count > 0 ? c.Average() : null;
     }
 

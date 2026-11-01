@@ -113,6 +113,7 @@ public partial class MainWindow : Window
             // por um instante e aparecia como engasgo no 1% low do benchmark.
             if (_gpuBenchActive) return;
             _monitor.Refresh();
+            AddNewSensorChips();
             if (_monitor.IsOpen) StatusText.Text = $"{_monitor.Rows.Count} sensores · atualizado {DateTime.Now:HH:mm:ss}";
             UpdateStressPanel();
             UpdateGpuLive();
@@ -167,8 +168,8 @@ public partial class MainWindow : Window
             _monitor.Refresh();
             UpdateCpuSensorWarning();
             AddChip("Todos", null, isChecked: true);
-            foreach (var c in _monitor.Rows.Select(r => r.Category).Distinct().OrderBy(x => x))
-                AddChip(c, c);
+            _chipsReady = true;
+            AddNewSensorChips();
             UpdateDashboard();
         }
 
@@ -830,8 +831,7 @@ public partial class MainWindow : Window
     /// <summary>Temperatura, clock médio dos núcleos e consumo da CPU (atualizado junto com os sensores).</summary>
     private void UpdateBenchLive()
     {
-        var clocks = _monitor.Rows.Where(r => r.HardwareType == HardwareType.Cpu && r.Type == SensorType.Clock &&
-                                              r.Name.StartsWith("Core #") && r.RawValue > 0).Select(r => r.RawValue!.Value).ToList();
+        var clocks = _monitor.CpuCoreClocks();
         BenchLive.ItemsSource = new[]
         {
             new KeyValuePair<string, string>("CPU", GameCatalog.ShortCpuName(_cpuName)),
@@ -1429,6 +1429,19 @@ public partial class MainWindow : Window
     private static extern bool UnregisterHotKey(IntPtr hWnd, int id);
 
     // ---------------- Sensores ----------------
+
+    private readonly HashSet<string> _sensorChips = new();
+    private bool _chipsReady;
+    private int _chipRows;
+
+    /// <summary>Memória e discos chegam depois da CPU e da GPU, com categorias que podem ser novas.</summary>
+    private void AddNewSensorChips()
+    {
+        if (!_chipsReady || _monitor.Rows.Count == _chipRows) return;
+        _chipRows = _monitor.Rows.Count;
+        foreach (var c in _monitor.Rows.Select(r => r.Category).Distinct().OrderBy(x => x))
+            if (_sensorChips.Add(c)) AddChip(c, c);
+    }
 
     private void AddChip(string label, string? category, bool isChecked = false)
     {
