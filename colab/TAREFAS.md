@@ -19,6 +19,7 @@ Legenda: `[ ]` pendente · `[~]` em andamento · `[x]` concluída · responsáve
 - [x] Compilar sem alterações: 0 erros, 16 avisos; pacote portátil de ~197 MB (claude)
 - [x] Mapear a arquitetura em `docs/ARQUITETURA.md` (claude)
 - [x] Listar onde o código viola os requisitos: ver Fase 3 (claude)
+- [ ] Revisão cruzada da correção de R14-H, de `SaveOrWarn` e da `v1.1.6` (`10509b2..main`, só commits do claude) (codex).
 - [x] Revisão cruzada da correção de R14-F e R14-G e da `v1.1.5` (`eb57190..10509b2`, só commits do claude) (codex, 2026-10-31). **APROVADO COM RESSALVAS**: R14-F/G confirmados, nenhum bloqueante; R14-H importante no aviso Linux. [Relatório](revisoes/2026-10-31-claude-r14fg-115.md).
 - [x] Revisão cruzada da correção de R14-D e R14-E e da `v1.1.4` (`ae85961..eb57190`, só commits do claude) (codex, 2026-10-31). **REPROVADO**: reproduções originais corrigidas; R14-F bloqueante e R14-G importante. [Relatório](revisoes/2026-10-31-claude-r14de-114.md).
 - [x] Revisão cruzada da correção de R14-C e R15-A e da `v1.1.3` (`218dcda..ae85961`, só commits do claude) (codex, 2026-10-31). **REPROVADO**: reproduções originais corrigidas; R14-D bloqueante e R14-E importante, relatório abaixo.
@@ -53,7 +54,7 @@ Legenda: `[ ]` pendente · `[~]` em andamento · `[x]` concluída · responsáve
 - [x] Revisão cruzada da Fase 3 junto com todo o histórico até `9b168be`: **REPROVADO** (codex, 2026-10-28).
 - [~] FPS estimado sem chave, Drivers com VERIFICAR TUDO, perfil de jogo e RESTAURAR ORIGINAL da Steam: conferidos no PC real (claude, 2026-10-31). Falta o FPS **com** chave, que depende de uma chave da HowManyFPS (usuário).
 - [x] Conferir os termos de redistribuição dos drivers de `Drivers/` e as licenças "a conferir": feito, com CH340, CP210x e FTDI retirados (D-030, `docs/UPSTREAM.md`) (claude, 2026-10-30).
-- [~] Gerar o pacote final (D-029, D-030): `v1.1.5` publicada como pré-lançamento no repositório público, com `InfoPC.exe` aberto em Windows limpo do CI e usado no PC real (claude, 2026-10-31). Revisão do codex: **APROVADO COM RESSALVAS**, hashes/conteúdo dos três pacotes conferidos; resta R14-H e o teste em Linux físico.
+- [~] Gerar o pacote final (D-029, D-030): `v1.1.6` publicada como pré-lançamento no repositório público, com `InfoPC.exe` aberto em Windows limpo do CI e usado no PC real (claude, 2026-10-31). Falta a revisão do codex desta versão e o teste em Linux físico (usuário).
 
 ## Fase 4 — Edição Linux (D-017 a D-023)
 
@@ -70,6 +71,9 @@ Legenda: `[ ]` pendente · `[~]` em andamento · `[x]` concluída · responsáve
 - [x] Revisão cruzada da edição Linux até `9b168be`: **REPROVADO**, correções pendentes abaixo (codex, 2026-10-28).
 
 ## Achados (fora do escopo da tarefa em que foram vistos)
+
+- [ ] Usuário: apagar `victorhoura/InfoPC-antigo` (D-030). O login do `gh` não tem a permissão `delete_repo`, que precisa de confirmação no navegador.
+- [ ] PC real: CPU a 92 °C antes do benchmark e 100 °C durante, GPU com hot spot de 95 °C e `PerfCap` térmico (2026-10-31). É do PC, não do programa: limpeza e pasta térmica (usuário).
 
 Achados no PC real em 2026-10-31, sem mudança nesta entrega. Os dois primeiros foram medidos lado a lado com o original 0.16 e são iguais; o terceiro não foi comparado:
 - [ ] Windows: os sensores levam cerca de 75 s para a primeira leitura neste PC (73,5 s no original, 74,8 s no InfoPC). Até lá, a Visão geral diz "sem leitura da CPU" e Sensores fica em "Detectando o hardware...".
@@ -112,7 +116,7 @@ Achado fora da revisão (claude, 2026-10-30): com os dados junto do programa, o 
 - [x] R14-E — **IMPORTANTE:** redução sequencial podia escolher uma ancestral entre três candidatas e avisar usando o caminho antigo. Corrigido em `2e7a3b0` (claude, 2026-10-31; D-033); codex confirmou a reprodução original e seis posições de ancestral/sucessora/ramificação, com preservação e caminho ativo correto, 2026-10-31.
 - [x] R14-F — **BLOQUEANTE:** Save após Load ilegível podia sobrescrever o original sem preservá-lo após falha. Corrigido em `ed7f7d3` (claude, 2026-10-31; D-034); codex confirmou as reproduções originais, cinco tentativas com arquivo preso, backup anterior diferente/idêntico, destino indisponível e falha posterior no `.tmp`. Core executado; Windows inspecionado/compilado. [Revisão](revisoes/2026-10-31-claude-r14fg-115.md).
 - [x] R14-G — **IMPORTANTE:** releitura posterior a `CanRead` fazia `Resolve` devolver fallback ancestral depois de novo bloqueio da portátil. Corrigido em `ed7f7d3` (claude, 2026-10-31; D-034); codex confirmou três reproduções mantendo a portátil posterior, sem aviso indevido de cópia. Mesmo relatório de R14-F.
-- [ ] R14-H — **IMPORTANTE:** janela Linux consulta `FolderNotice` antes de `Services.StartAsync -> AppSettings.Load`; aviso criado pelo Load não aparece nessa abertura. Codex reproduziu com arquivo danificado como única candidata e bloqueio posterior a Resolve em headless; controle positivo mostra o diálogo quando o aviso já existe. Original preservado, nenhum novo bloqueante demonstrado. Correção para o claude; [relatório e roteiro](revisoes/2026-10-31-claude-r14fg-115.md).
+- [~] R14-H — **IMPORTANTE:** janela Linux consulta `FolderNotice` antes de `Services.StartAsync -> AppSettings.Load`; aviso criado pelo Load não aparece nessa abertura. Codex reproduziu com arquivo danificado como única candidata e bloqueio posterior a Resolve em headless; controle positivo mostra o diálogo quando o aviso já existe. Original preservado, nenhum novo bloqueante demonstrado. Correção para o claude; [relatório e roteiro](revisoes/2026-10-31-claude-r14fg-115.md). Corrigido em `cd018a2` (claude, 2026-10-31). Aguarda revisão do codex.
 
 - 16 avisos de nulabilidade no build do original (`MainWindow.Oc.cs`, `DiskHealth.cs`). Não corrigir de carona.
 - Não há testes automatizados no original (a edição Linux tem a suíte em `linux/tests`).

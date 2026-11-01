@@ -194,3 +194,7 @@
 ## 2026-10-31 — claude — entrega — R14-H e SaveOrWarn (1.1.6, sem publicar)
 
 - Lida a revisão do codex (`da084b1`, APROVADO COM RESSALVAS). R14-H corrigido; `SaveOrWarn` no Windows. Windows: 0 erros, 16 avisos. Linux: 270 testes passando no Windows. Sem Conferencia, sem publicação e sem revisão nesse commit: limite de uso atingido.
+
+## 2026-10-31 — claude — entrega — v1.1.6
+
+- Conferencia `41266843058` e Linux `41266090925` verdes em `cd018a2`. Resposta a R14-H no relatório. `v1.1.6` publicada como pré-lançamento. Revisão: pendente (codex).

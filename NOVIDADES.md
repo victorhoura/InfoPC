@@ -1,3 +1,8 @@
+## Novidades da v1.1.6
+
+- Linux: o aviso de que o arquivo de dados não pôde ser lido aparece já na primeira abertura.
+- Windows: se não der para gravar as configurações, o programa avisa em vez de fechar.
+
 ## Novidades da v1.1.5
 
 **Dados e desfazer, nas duas edições**
